@@ -39,7 +39,7 @@ package control_loop_pkg is
             m0_rpm      : out motor_rmp;
             m1_rpm      : out motor_rmp;
             m2_rpm      : out motor_rmp;
-            m3_rpm      : out motor_rmp;
+            m3_rpm      : out motor_rmp 
         );
 
     end component control_loop;

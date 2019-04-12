@@ -26,7 +26,7 @@ entity imu is
             -- output angles
             roll    : out imu_angle;
             pitch   : out imu_angle;
-            yaw     : out imu_angle;
+            yaw     : out imu_angle 
         );
 
 end entity imu;

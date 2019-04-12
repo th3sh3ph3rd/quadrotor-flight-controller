@@ -31,7 +31,7 @@ entity control_loop is
             m0_rpm      : out motor_rmp;
             m1_rpm      : out motor_rmp;
             m2_rpm      : out motor_rmp;
-            m3_rpm      : out motor_rmp;
+            m3_rpm      : out motor_rmp 
         );
 
 end entity control_loop;
