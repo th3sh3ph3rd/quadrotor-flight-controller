@@ -20,13 +20,8 @@ package imu_pkg is
             clk     : in std_logic;
             res_n   : in std_logic;
 
-            -- SPI
-            scl     : out std_logic;
-            cs_n    : out std_logic;
-            sdo     : out std_logic;
-            sdi     : in std_logic;
-
             -- output angles
+            imu_rdy : out std_logic;
             roll    : out imu_angle;
             pitch   : out imu_angle;
             yaw     : out imu_angle 
