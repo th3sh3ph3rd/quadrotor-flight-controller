@@ -13,7 +13,7 @@ package imu_spi_pkg is
 
         generic
         (
-            SPI_CLK_DIVISIOR : integer;
+            CLK_DIVISIOR : integer;
         );
         
         port
@@ -24,13 +24,13 @@ package imu_spi_pkg is
 
             -- communication interface
             busy    : out std_logic;
-            tx_en   : in std_logic;
+            enable  : in std_logic;
+            rx_en   : in std_logic;
             rx_rdy  : out std_logic;
-            tx_addr : in std_logic_vector(7 downto 0);
+            addr    : in std_logic_vector(7 downto 0);
             tx_data : in std_logic_vector(7 downto 0);
             rx_len  : in natural;
-            rx_addr : in std_logic_vector(7 downto 0);
-            rx_data : in std_logic_vector(7 downto 0);
+            rx_data : out std_logic_vector(7 downto 0);
 
             -- SPI
             scl     : out std_logic;
