@@ -97,5 +97,5 @@ begin
         wait;
     end process test;
 
-end architecture imu_spi_tb;
+end architecture tb;
 
