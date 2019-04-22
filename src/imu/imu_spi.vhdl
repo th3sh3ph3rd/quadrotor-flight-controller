@@ -131,7 +131,7 @@ begin
 
     output : process(all)
     begin
-        busy    <= '0';
+        busy    <= '1';
         rx_rdy  <= '0';
         rx_data <= (others => '0');
         scl     <= '1';
@@ -144,6 +144,7 @@ begin
 
         case state is
             when IDLE =>
+                busy <= '0';
 
             when INIT =>
                 cs_n <= '0';
