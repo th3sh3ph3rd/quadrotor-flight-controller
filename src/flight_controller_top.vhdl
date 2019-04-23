@@ -22,7 +22,7 @@ entity flight_controller_top is
 
 end flight_controller_top;
 
-architecture rtl of flight_controller_top is
+architecture structure of flight_controller_top is
  
     constant SYS_CLK_FREQ   : natural := 50000000;
     constant BAUD_RATE      : natural := 9600;
@@ -47,22 +47,22 @@ architecture rtl of flight_controller_top is
         );
         port
         (
-                      -- global synchronization
+            -- global synchronization
             clk         : in std_logic;                       
             res_n       : in std_logic;                     
 
-                      -- tx interface
+            -- tx interface
             tx_data     : in std_logic_vector(7 downto 0);  
             tx_wr       : in std_logic;			
             tx_full     : out std_logic;	
 
-                      -- rx interface
+            -- rx interface
             rx_data     : out std_logic_vector(7 downto 0);
             rx_rd       : in std_logic;			
             rx_full     : out std_logic;	
             rx_empty    : out std_logic;
 
-                      -- uart io pins
+            -- uart io pins
             rx          : in std_logic;
             tx          : out std_logic
         );
@@ -108,8 +108,8 @@ begin
         rx_full => open,
         rx_empty => open,
 
-        tx => pmoda(0),
-        rx => pmoda(1)
+        tx => pmoda(1),
+        rx => pmoda(0)
     );
 
  
@@ -134,4 +134,5 @@ begin
     leds(0) <= led_state;
     leds(4 downto 1) <= (others => '1');
 
-end rtl;
+end structure;
+
