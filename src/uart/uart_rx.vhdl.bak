@@ -189,5 +189,5 @@ begin
         end case;	
     end process;
 
-end architecture beh;
+end architecture uart_rx;
 

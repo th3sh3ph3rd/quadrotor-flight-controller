@@ -42,6 +42,7 @@ entity imu_spi is
 end entity imu_spi;
 
 architecture beh of imu_spi is
+    
     -- fsm state
     type SPI_STATE_TYPE is (IDLE, INIT, WRADDR, WRDATA);
     signal state            : SPI_STATE_TYPE;

@@ -1,10 +1,12 @@
 # LED Test
 
+PROJ_NAME := quadrotor-flight-controller
+
 VHDL_FILES := src/flight_controller_top.vhdl
 
 TOP_ENTITY := flight_controller_top
 PROJ_DIR := quartus
-BITSTREAM := $(PROJ_DIR)/$(TOP_ENTITY).sof
+BITSTREAM := $(PROJ_DIR)/output_files/$(TOP_ENTITY).sof
 BLASTER_TYPE ?= USB-BlasterII
 
 all: $(BITSTREAM)

@@ -176,5 +176,5 @@ begin
 
     end process;
 
-end architecture beh;
+end architecture uart_tx;
 

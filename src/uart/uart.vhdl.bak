@@ -186,5 +186,5 @@ begin
         fill_level => open
     );
 	
-end architecture structure;
+end architecture uart;
 
