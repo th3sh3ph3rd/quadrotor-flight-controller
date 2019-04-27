@@ -66,6 +66,8 @@ set_global_assignment -name VHDL_FILE ../src/util/synchronizer/sync.vhd
 set_global_assignment -name VHDL_FILE ../src/util/ram/ram_pkg.vhd
 set_global_assignment -name VHDL_FILE ../src/util/ram/fifo_1c1r1w.vhd
 set_global_assignment -name VHDL_FILE ../src/util/ram/dp_ram_1c1r1w.vhd
+set_global_assignment -name VHDL_FILE ../src/util/debug/debug_pkg.vhdl
+set_global_assignment -name VHDL_FILE ../src/util/debug/debug.vhdl
 set_global_assignment -name VHDL_FILE ../src/flight_controller_top.vhdl
 set_global_assignment -name SDC_FILE SDC1.sdc
 set_location_assignment PIN_U20 -to buttons[3]

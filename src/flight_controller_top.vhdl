@@ -8,6 +8,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.sync_pkg.all;
+use work.debug_pkg.all;
 
 entity flight_controller_top is
   
@@ -32,8 +33,9 @@ architecture structure of flight_controller_top is
     signal counter : natural range 0 to SYS_CLK_FREQ-1;
     signal led_state : std_logic;
 
-    signal new_ascii : std_logic;
-    signal ascii : std_logic_vector(7 downto 0);
+    signal en  : std_logic;
+    signal msg : debug_msg;
+    signal len : debug_len;
 
     component uart is
 
@@ -68,7 +70,7 @@ architecture structure of flight_controller_top is
         );
 
     end component uart;
-     
+
 begin
 
     sys_reset_sync : sync
@@ -85,47 +87,39 @@ begin
         data_out => res_n
     );
     
-    uart_inst : uart
-    generic map 
+    debug_inst : debug
+    generic map
     (
         CLK_FREQ => SYS_CLK_FREQ,
-        BAUD_RATE => BAUD_RATE,
-        SYNC_STAGES => 2,
-        TX_FIFO_DEPTH => 8,
-        RX_FIFO_DEPTH => 8
+        BAUD_RATE => BAUD_RATE
     )
     port map
     (
-        clk => clk,
+        clk => clk, 
         res_n => res_n,
 
-        tx_data => ascii,
-        tx_wr => new_ascii,
-        tx_full => open,
+        en => en,
+        msg => msg,
+        len => len,
 
-        rx_data => open,
-        rx_rd => '0',
-        rx_full => open,
-        rx_empty => open,
-
-        tx => pmoda(1),
-        rx => pmoda(0)
+        rx => pmoda(1),
+        tx => pmoda(0)
     );
-
  
     process(all) is
     begin
         
-        ascii <= X"65";
+        msg <= str_to_debug_msg("hello pc!");
+        len <= 9;
 
         if rising_edge(clk) then
             if counter = SYS_CLK_FREQ-1 then
                 led_state <= not led_state;
                 counter <= 0;
-                new_ascii <= '1';
+                en <= '1';
             else
-                new_ascii <= '0';
                 counter <= counter + 1;
+                en <= '0';
             end if;
         end if;
 
