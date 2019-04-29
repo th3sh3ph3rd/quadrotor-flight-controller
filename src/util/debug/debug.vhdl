@@ -35,17 +35,17 @@ entity debug is
 
 end entity debug;
 
-architecture beh of debug is
+architecture behavior of debug is
 
-    type STATE_TYPE is (IDLE, WRITE, WRITE_NL, WAIT_UART);
-    signal state, state_next : STATE_TYPE;
+    type state_type is (IDLE, WRITE, WRITE_NL, WAIT_UART);
+    signal state, state_next : state_type;
 
-    type REGISTERS is record
+    type registers is record
         msg : debug_msg;
         len : debug_len;
         cnt : debug_len;
     end record;
-    signal regs, regs_next : REGISTERS;
+    signal regs, regs_next : registers;
 
     signal tx_wr, tx_full : std_logic;
     signal tx_data        : std_logic_vector(7 downto 0);
@@ -156,5 +156,5 @@ begin
 
     end process output;
 
-end architecture beh;
+end architecture behavior;
 

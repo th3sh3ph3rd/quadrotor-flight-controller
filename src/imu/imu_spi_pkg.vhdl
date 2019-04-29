@@ -10,12 +10,10 @@ use ieee.numeric_std.all;
 package imu_spi_pkg is
 
     component imu_spi is
-
         generic
         (
             CLK_DIVISIOR : integer;
-        );
-        
+        ); 
         port
         (
             -- global synchronization
@@ -38,7 +36,6 @@ package imu_spi_pkg is
             sdo     : out std_logic;
             sdi     : in std_logic
         );
-
     end component imu_spi;
 
 end package imu_spi_pkg; 

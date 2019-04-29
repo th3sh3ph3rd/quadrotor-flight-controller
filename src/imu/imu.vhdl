@@ -8,7 +8,6 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.imu_pkg.all;
-use work.imu_spi_pkg.all;
 
 entity imu is
 
@@ -27,7 +26,7 @@ entity imu is
 
 end entity imu;
 
-architecture beh of imu is
+architecture structure of imu is
 
     signal spi_busy, spi_enable, spi_rx_en, spi_rx_rdy : std_logic;
     signal spi_addr, spi_tx_data spi_rx_data : std_logic_vector(7 downto 0);
@@ -45,6 +44,46 @@ architecture beh of imu is
 
     end procedure read_register;
 
+    component imu_spi is
+
+        generic
+        (
+            CLK_DIVISIOR : integer;
+        );
+        
+        port
+        (
+            -- global synchronization
+            clk     : in std_logic;
+            res_n   : in std_logic;
+
+            -- communication interface
+            busy    : out std_logic;
+            enable  : in std_logic;
+            rx_en   : in std_logic;
+            rx_rdy  : out std_logic;
+            addr    : in std_logic_vector(7 downto 0);
+            tx_data : in std_logic_vector(7 downto 0);
+            rx_len  : in natural;
+            rx_data : out std_logic_vector(7 downto 0);
+
+            -- SPI
+            scl     : out std_logic;
+            cs_n    : out std_logic;
+            sdo     : out std_logic;
+            sdi     : in std_logic
+        );
+
+    end component imu_spi;
+
+    component imu_init is
+
+    end component imu_init;
+
+    component imu_init is
+
+    end component imu_read;
+
 begin
 
     entity imu_spi
@@ -59,5 +98,7 @@ begin
         
     );
 
-end architecture beh;
+    -- TODO create SPI mux dependant init finished signal
+
+end architecture structure;
 

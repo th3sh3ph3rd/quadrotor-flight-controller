@@ -73,6 +73,8 @@ architecture structure of flight_controller_top is
 
 begin
 
+    -- TODO create debug mux between different modules
+
     sys_reset_sync : sync
     generic map 
     (

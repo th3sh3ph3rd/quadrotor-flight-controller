@@ -7,6 +7,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+-- TODO create top module for abstract read/write and remove package
 use work.imu_spi_pkg.all;
 
 entity imu_spi is
@@ -15,7 +16,6 @@ entity imu_spi is
         (
             CLK_DIVISIOR : integer;
         );
-
         port
         (
             -- global synchronization
@@ -41,61 +41,46 @@ entity imu_spi is
 
 end entity imu_spi;
 
-architecture beh of imu_spi is
+architecture behavior of imu_spi is
     
     -- fsm state
-    type SPI_STATE_TYPE is (IDLE, INIT, WRADDR, WRDATA);
-    signal state            : SPI_STATE_TYPE;
-    signal state_next       : SPI_STATE_TYPE;
+    type state_type is (IDLE, INIT, WRADDR, WRDATA);
+    signal state, state_next : state_type;
 
     -- counters
-    signal clk_cnt          : natural range 0 to CLK_DIVISOR-1;
-    signal clk_cnt_next     : natural range 0 to CLK_DIVISOR-1;
-    signal bit_cnt          : natural range 0 to 7;
-    signal bit_cnt_next     : natural range 0 to 7;
-    signal rx_cnt           : natural; --TODO can we impose a range limit? if yes, also change interface
-    signal rx_cnt_next      : natural;
+    type counters is record
+        clk      : natural range 0 to CLK_DIVISOR-1;
+        bits     : natural range 0 to 7;
+        rx_bytes : natural; --TODO can we impose a range limit? if yes, also change interface
+    end record;
+    signal cnt, cnt_next : counters;
 
     -- buffers
-    signal addr_buf         : std_logic_vector(7 downto 0);
-    signal data_buf         : std_logic_vector(7 downto 0);
-    signal len_buf          : natural;
+    type buffers is record
+        addr : std_logic_vector(7 downto 0);
+        data : std_logic_vector(7 downto 0);
+        len  : natural;
+    end record;
+    signal buf, buf_next : buffers;
 
 begin
 
     sync : process(all)
     begin
         if res_n = '0' then
-            state       <= IDLE;
-            clk_cnt     <= 0;
-            bit_cnt     <= 7;
-            rx_cnt      <= 0;
-            addr_buf    <= (others => '0');
-            data_buf    <= (others => '0');
-            len_buf     <= 0;
+            state        <= IDLE;
+            cnt.clk      <= 0;
+            cnt.bits     <= 7;
+            cnt.rx_bytes <= 0;
+            buf.addr     <= (others => '0');
+            buf.data     <= (others => '0');
+            buf.len      <= 0;
         elsif rising_edge(clk) then
-            state       <= state_next;
-            clk_cnt     <= clk_cnt_next;
-            bit_cnt     <= bit_cnt_next;
-            rx_cnt      <= rx_cnt_next;
-            
-            if clk_cnt = CLK_DIVISOR-1 or state = IDLE or state = INIT then
-                clk_cnt <= 0;
-            else
-                clk_cnt <= clk_cnt + 1;
-            end if;
-
-            if enable = '1' then
-                addr_buf <= addr;
-                data_buf <= data;
-                len_buf  <= 0;
-            else
-                addr_buf <= addr_buf;
-                data_buf <= data_buf;
-                len_buf  <= 0;
-            end if;
+            state   <= state_next;
+            cnt     <= cnt_next;
+            buf     <= buf_next;
         end if;
-    end process;
+    end process sync;
 
     next_state : process(all)
     begin
@@ -112,14 +97,14 @@ begin
                 state_next <= WRADDR;
 
             when WRADDR =>
-                if bit_cnt = 0 then
+                if cnt.bits = 0 then
                     state_next = WRDATA;
                 end if;
 
             when WRDATA =>
-                if bit_cnt = 0 then
+                if cnt.bits = 0 then
                     if rx_en = '1' then
-                        if rx_cnt = len_buf then
+                        if cnt.rx_bytes = len_buf then
                             state_next <= IDLE;
                         end if;
                     else
@@ -128,75 +113,84 @@ begin
                 end if;
 
         end case;
-    end process;
+    end process next_state;
 
     output : process(all)
     begin
         busy    <= '1';
         rx_rdy  <= '0';
-        rx_data <= (others => '0');
+        rx_data <= buf.data;
         scl     <= '1';
         cs_n    <= '1';
         sdo     <= 'Z'; --TODO tristate correct?
         
-        clk_cnt_next <= 0;
-        bit_cnt_next <= 7;
-        rx_cnt_next  <= 0;
+        cnt_next.clk      <= 0;
+        cnt_next.bits     <= 7;
+        cnt_next.rx_bytes <= 0;
+
+        buf_next <= buf;
 
         case state is
             when IDLE =>
                 busy <= '0';
+                if enable = '1' then
+                    buf_next.addr <= addr;
+                    buf_next.data <= tx_data;
+                    buf_next.len  <= rx_len;
+                end if;
 
             when INIT =>
                 cs_n <= '0';
 
             when WRADDR =>
-                if clk_cnt = CLK_DIVISOR-1 then
-                    clk_cnt_next <= 0;
-                    if bit_cnt = 0 then
-                        bit_cnt_next <= 7;i
+                if cnt.clk = CLK_DIVISOR-1 then
+                    cnt_next.clk <= 0;
+                    if cnt.bits = 0 then
+                        cnt_next.bits <= 7;
                     else
-                        bit_cnt_next <= bit_cnt - 1;
+                        cnt_next.bits <= cnt.bits - 1;
                     end if;
                 else
-                    clk_cnt_next <= clk_cnt + 1;
+                    cnt_next.clk <= cnt.clk + 1;
                 end if;
 
-                if clk_cnt < CLK_DIVISOR/2 then
+                if cnt.clk < CLK_DIVISOR/2 then
                     scl <= '0';
                 end if;
 
-                sdo <= addr_buf(bit_cnt);
+                sdo <= buf.addr(cnt.bits);
 
             when WRDATA =>
-                if clk_cnt = CLK_DIVISOR-1 then
-                    clk_cnt_next <= 0;
-                    if bit_cnt = 0 then
-                        bit_cnt_next <= 7;
+                if cnt.clk = CLK_DIVISOR-1 then
+                    cnt_next.clk <= 0;
+                    if cnt.bits = 0 then
+                        cnt_next.bits <= 7;
                         if rx_en = '1' then
-                            rx_cnt_next <= rx_cnt + 1;
+                            cnt_next.bytes <= cnt.bytes + 1;
                             rx_rdy <= '1';
                         end if;
                     else
-                        bit_cnt_next <= bit_cnt - 1;
+                        cnt_next.bits <= cnt.bits - 1;
                     end if;
                 else
-                    clk_cnt_next <= clk_cnt + 1;
+                    cnt_next.clk <= cnt.clk + 1;
                 end if;
 
-                if clk_cnt < CLK_DIVISOR/2 then
+                if cnt.clk < CLK_DIVISOR/2 then
                     scl <= '0';
                 end if;
 
                 if rx_en = '1' then
-                    sdo <= '0';
-                    data_buf_next <= data_buf(6 downto 0) & sdi; --TODO maybe samble bits on clock transition
+                    sdo <= '0'; -- write dummy bits on read
+                    if cnt.clk = CLK_DIVISOR/2 then -- sample on clock transition
+                        buf_next.data <= buf.data(6 downto 0) & sdi;
+                    end if;
                 else
-                    sdo <= data_buf(bit_cnt);
+                    sdo <= buf.data(cnt.bits);
                 end if;
 
         end case;
-    end process;
+    end process output;
 
-end architecture beh;
+end architecture behavior;
 
