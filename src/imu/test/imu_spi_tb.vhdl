@@ -35,8 +35,11 @@ begin
        busy => busy,
        enable => enable,
        rx_en => rx_en,
+       rx_rdy => open,
        addr => addr,
        tx_data => tx_data,
+       rx_len => rx_len,
+       rx_data => open,
        sdi => sdi
     );
 
@@ -67,6 +70,7 @@ begin
         wait for SYS_CLK_PERIOD;
         enable <= '0';
         wait until falling_edge(busy);
+        wait for SYS_CLK_PERIOD*2;
 
         -- simple rx test
         enable <= '1';
@@ -78,24 +82,24 @@ begin
         enable <= '0';
         wait for SYS_CLK_PERIOD + SPI_CLK_PERIOD*8;
         sdi <= '1';
-        wait for SPI_SLK_PERIOD; 
+        wait for SPI_CLK_PERIOD; 
         sdi <= '0';
-        wait for SPI_SLK_PERIOD; 
+        wait for SPI_CLK_PERIOD; 
         sdi <= '0';
-        wait for SPI_SLK_PERIOD; 
+        wait for SPI_CLK_PERIOD; 
         sdi <= '1';
-        wait for SPI_SLK_PERIOD; 
+        wait for SPI_CLK_PERIOD; 
         sdi <= '1';
-        wait for SPI_SLK_PERIOD; 
+        wait for SPI_CLK_PERIOD; 
         sdi <= '0';
-        wait for SPI_SLK_PERIOD; 
+        wait for SPI_CLK_PERIOD; 
         sdi <= '0';
-        wait for SPI_SLK_PERIOD; 
+        wait for SPI_CLK_PERIOD; 
         sdi <= '1';
         wait until falling_edge(busy);
 
         wait;
-    end process test;
+    end process stimulus;
 
 end architecture tb;
 

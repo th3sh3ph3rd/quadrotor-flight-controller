@@ -12,7 +12,7 @@ package imu_spi_pkg is
     component imu_spi is
         generic
         (
-            CLK_DIVISIOR : integer;
+            CLK_DIVISOR : integer 
         ); 
         port
         (

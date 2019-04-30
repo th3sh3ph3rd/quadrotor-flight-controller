@@ -14,7 +14,7 @@ entity imu_spi is
 
         generic
         (
-            CLK_DIVISIOR : integer;
+            CLK_DIVISOR : integer 
         );
         port
         (
@@ -57,9 +57,9 @@ architecture behavior of imu_spi is
 
     -- buffers
     type buffers is record
-        addr : std_logic_vector(7 downto 0);
-        data : std_logic_vector(7 downto 0);
-        len  : natural;
+        addr   : std_logic_vector(7 downto 0);
+        data   : std_logic_vector(7 downto 0);
+        rx_len : natural;
     end record;
     signal buf, buf_next : buffers;
 
@@ -74,7 +74,7 @@ begin
             cnt.rx_bytes <= 0;
             buf.addr     <= (others => '0');
             buf.data     <= (others => '0');
-            buf.len      <= 0;
+            buf.rx_len      <= 0;
         elsif rising_edge(clk) then
             state   <= state_next;
             cnt     <= cnt_next;
@@ -97,14 +97,14 @@ begin
                 state_next <= WRADDR;
 
             when WRADDR =>
-                if cnt.bits = 0 then
-                    state_next = WRDATA;
+                if cnt.bits = 0 and cnt.clk = CLK_DIVISOR-1 then
+                    state_next <= WRDATA;
                 end if;
 
             when WRDATA =>
-                if cnt.bits = 0 then
+                if cnt.bits = 0 and cnt.clk = CLK_DIVISOR-1 then
                     if rx_en = '1' then
-                        if cnt.rx_bytes = len_buf then
+                        if cnt.rx_bytes+1 = buf.rx_len then --TODO +1 is a dirty fix, maybe find nicer solution
                             state_next <= IDLE;
                         end if;
                     else
@@ -121,26 +121,23 @@ begin
         rx_rdy  <= '0';
         rx_data <= buf.data;
         scl     <= '1';
-        cs_n    <= '1';
+        cs_n    <= '0';
         sdo     <= 'Z'; --TODO tristate correct?
         
-        cnt_next.clk      <= 0;
-        cnt_next.bits     <= 7;
-        cnt_next.rx_bytes <= 0;
-
+        cnt_next <= cnt;
         buf_next <= buf;
 
         case state is
             when IDLE =>
                 busy <= '0';
+                cs_n <= '1';
                 if enable = '1' then
-                    buf_next.addr <= addr;
-                    buf_next.data <= tx_data;
-                    buf_next.len  <= rx_len;
+                    buf_next.addr    <= addr;
+                    buf_next.data    <= tx_data;
+                    buf_next.rx_len  <= rx_len;
                 end if;
 
             when INIT =>
-                cs_n <= '0';
 
             when WRADDR =>
                 if cnt.clk = CLK_DIVISOR-1 then
@@ -166,7 +163,7 @@ begin
                     if cnt.bits = 0 then
                         cnt_next.bits <= 7;
                         if rx_en = '1' then
-                            cnt_next.bytes <= cnt.bytes + 1;
+                            cnt_next.rx_bytes <= cnt.rx_bytes + 1;
                             rx_rdy <= '1';
                         end if;
                     else

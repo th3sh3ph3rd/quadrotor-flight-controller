@@ -5,5 +5,5 @@ vsim -t ps work.imu_spi_tb
 
 add wave /imu_spi_tb/UUT/*
 
-run 1 us
+run 10 us
 
