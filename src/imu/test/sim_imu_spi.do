@@ -1,4 +1,3 @@
-vcom -work work -2008 ../imu_spi_pkg.vhdl
 vcom -work work -2008 imu_spi_tb.vhdl
 
 vsim -t ps work.imu_spi_tb

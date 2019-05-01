@@ -7,15 +7,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
--- TODO create top module for abstract read/write and remove package
-use work.imu_spi_pkg.all;
-
 entity imu_spi is
-
+        
         generic
         (
             CLK_DIVISOR : integer 
-        );
+        ); 
         port
         (
             -- global synchronization
@@ -23,8 +20,8 @@ entity imu_spi is
             res_n   : in std_logic;
 
             -- communication interface
-            busy    : out std_logic;
-            enable  : in std_logic;
+            start   : in std_logic;
+            finish  : out std_logic;
             rx_en   : in std_logic;
             rx_rdy  : out std_logic;
             addr    : in std_logic_vector(7 downto 0);
@@ -74,7 +71,7 @@ begin
             cnt.rx_bytes <= 0;
             buf.addr     <= (others => '0');
             buf.data     <= (others => '0');
-            buf.rx_len      <= 0;
+            buf.rx_len   <= 0;
         elsif rising_edge(clk) then
             state   <= state_next;
             cnt     <= cnt_next;
@@ -88,7 +85,7 @@ begin
 
         case state is
             when IDLE =>
-                if enable = '1' then
+                if start = '1' then
                     state_next <= INIT;
                 end if;
 
@@ -117,7 +114,7 @@ begin
 
     output : process(all)
     begin
-        busy    <= '1';
+        finish  <= '0';
         rx_rdy  <= '0';
         rx_data <= buf.data;
         scl     <= '1';
@@ -129,9 +126,8 @@ begin
 
         case state is
             when IDLE =>
-                busy <= '0';
                 cs_n <= '1';
-                if enable = '1' then
+                if start = '1' then
                     buf_next.addr    <= addr;
                     buf_next.data    <= tx_data;
                     buf_next.rx_len  <= rx_len;
@@ -165,6 +161,12 @@ begin
                         if rx_en = '1' then
                             cnt_next.rx_bytes <= cnt.rx_bytes + 1;
                             rx_rdy <= '1';
+                            if cnt.rx_bytes+1 = buf.rx_len then --TODO +1 is a dirty fix, maybe find nicer solution
+                                cnt_next.rx_bytes <= 0;
+                                finish <= '1';
+                            end if;
+                        else
+                            finish <= '1';
                         end if;
                     else
                         cnt_next.bits <= cnt.bits - 1;
