@@ -26,34 +26,31 @@ entity imu is
             roll    : out imu_angle;
             pitch   : out imu_angle;
             yaw     : out imu_angle 
+            
+            -- SPI
+            spi_in  : in imu_spi_in;
+            spi_out : out imu_spi_out
         );
 
 end entity imu;
 
 architecture structure of imu is
+    
+    -- time constants
+    constant INIT_WAIT_CLKS : natural := CLK_FREQ/1000; -- 1 ms
+    signal clk_cnt : natural;
+    
+    signal reg_in   : imu_reg_in;
+    signal reg_out  : imu_reg_out;
 
-    signal spi_busy, spi_enable, spi_rx_en, spi_rx_rdy : std_logic;
-    signal spi_addr, spi_tx_data spi_rx_data : std_logic_vector(7 downto 0);
-    signal spi_rx_len : natural;
-
-    procedure write_register(constant addr  : std_logic_vector(7 downto 0);
-                             constant data  : std_logic_vector(7 downto 0)) is
-    begin
-
-    end procedure write_register;
-
-    procedure read_register(constant addr   : std_logic_vector(7 downto 0);
-                            constant len    : natural) is
-    begin
-
-    end procedure read_register;
+    signal init_start, init_done : std_logic;
 
     component imu_spi is
 
         generic
         (
-            CLK_DIVISIOR : integer;
-        );    
+            CLK_DIVISOR : integer 
+        ); 
         port
         (
             -- global synchronization
@@ -61,20 +58,12 @@ architecture structure of imu is
             res_n   : in std_logic;
 
             -- communication interface
-            busy    : out std_logic;
-            enable  : in std_logic;
-            rx_en   : in std_logic;
-            rx_rdy  : out std_logic;
-            addr    : in std_logic_vector(7 downto 0);
-            tx_data : in std_logic_vector(7 downto 0);
-            rx_len  : in natural;
-            rx_data : out std_logic_vector(7 downto 0);
+            reg_in  : in imu_reg_in;
+            reg_out : out imu_reg_out; 
 
             -- SPI
-            scl     : out std_logic;
-            cs_n    : out std_logic;
-            sdo     : out std_logic;
-            sdi     : in std_logic
+            spi_in  : in imu_spi_in;
+            spi_out : out imu_spi_out
         );
 
     end component imu_spi;
@@ -93,27 +82,17 @@ architecture structure of imu is
 
             -- init signals
             init    : in std_logic;
-            done    : out std_logic 
+            done    : out std_logic; 
           
             -- communication interface for SPI
-            spi_en  : out std_logic;
-            spi_fin : in std_logic;
-            rx_en   : out std_logic;
-            rx_rdy  : in std_logic;
-            addr    : out std_logic_vector(7 downto 0);
-            tx_data : out std_logic_vector(7 downto 0);
-            rx_len  : out natural;
-            rx_data : in std_logic_vector(7 downto 0);
+            reg_in  : out imu_reg_in;
+            reg_out : in imu_reg_out;
 
             -- debug port
-            dbg     : out debug_if;
+            dbg     : out debug_if
         );
 
     end component imu_init;
-
-    component imu_init is
-
-    end component imu_read;
 
 begin
 
@@ -124,25 +103,49 @@ begin
     )
     port map
     (
-        clk <= clk,
-        res_n <= res_n,
-        
+        clk => clk,
+        res_n => res_n,
+        reg_in => reg_in,
+        reg_out => reg_out,
+        spi_in => spi_in,
+        spi_out => spi_out 
     );
 
     imu_init_inst : imu_init
     generic map
     (
-        CLK_DIVISOR => 4
+        CLK_FREQ => CLK_FREQ
     )
     port map
     (
-        clk <= clk,
-        res_n <= res_n,
-        
+        clk => clk,
+        res_n => res_n,
+        init => init_start,
+        done => init_done,
+        reg_in => reg_in,
+        reg_out => reg_out,
+        dbg => dbg
     );
 
+    sync : process(all)
+    begin
+        if res_n = '0' then
+            clk_cnt <= 0;
+        elsif rising_edge(clk) then
+            clk_cnt <= clk_cnt + 1;
+        end if; 
+    end process sync;
+   
+    output : process(all)
+    begin
+        init_start <= '0'; 
 
-    -- TODO create SPI mux dependant init finished signal
+        if clk_cnt = INIT_WAIT_CLKS-1 then
+            init_start <= '1';
+        end if;
+    end process output;
+
+    -- TODO create SPI and debug mux dependant init finished signal
 
 end architecture structure;
 

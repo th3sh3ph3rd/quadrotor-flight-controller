@@ -109,8 +109,12 @@ begin
         
         dbg.msg <= str_to_debug_msg("hello pc!");
         dbg.len <= 9;
-
-        if rising_edge(clk) then
+        
+        if res_n = '0' then
+            counter <= 0;
+            led_state <= '1';
+            dbg.en <= '0';
+        elsif rising_edge(clk) then
             if counter = SYS_CLK_FREQ-1 then
                 led_state <= not led_state;
                 counter <= 0;

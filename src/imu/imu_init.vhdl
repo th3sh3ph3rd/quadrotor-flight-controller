@@ -7,6 +7,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.imu_spi_if.all;
 use work.debug_pkg.all;
 
 entity imu_init is
@@ -23,20 +24,14 @@ entity imu_init is
 
             -- init signals
             init    : in std_logic;
-            done    : out std_logic 
+            done    : out std_logic; 
           
             -- communication interface for SPI
-            spi_en  : out std_logic;
-            spi_fin : in std_logic;
-            rx_en   : out std_logic;
-            rx_rdy  : in std_logic;
-            addr    : out std_logic_vector(7 downto 0);
-            tx_data : out std_logic_vector(7 downto 0);
-            rx_len  : out natural;
-            rx_data : in std_logic_vector(7 downto 0);
+            reg_in  : out imu_reg_in;
+            reg_out : in imu_reg_out;
 
             -- debug port
-            dbg     : out debug_if;
+            dbg     : out debug_if
         );
 
 end entity imu_init;
@@ -47,7 +42,7 @@ architecture behavior of imu_init is
     constant RST_WAIT_CLKS : natural := CLK_FREQ/10; -- 100 ms
 
     -- fsm state
-    type state_type is (IDLE, RST, WAITRST, WAKEUP, RD_WAI, DONE);
+    type state_type is (IDLE, RST, WAITRST, WAKEUP, RD_WAI, FIN);
     signal state, state_next : state_type;
 
     -- clock counter
@@ -77,8 +72,8 @@ begin
                 end if;
 
             when RST =>
-                if spi_fin = '1' then
-                    state_next = WAITRST;
+                if reg_out.finish = '1' then
+                    state_next <= WAITRST;
                 end if;
 
             when WAITRST =>
@@ -87,16 +82,16 @@ begin
                 end if;
 
             when WAKEUP =>
-                if spi_fin = '1' then
-                    state_next = RD_WAI;
+                if reg_out.finish = '1' then
+                    state_next <= RD_WAI;
                 end if;
 
             when RD_WAI =>
-                if spi_fin = '1' then
-                    state_next = DONE;
+                if reg_out.finish = '1' then
+                    state_next <= FIN;
                 end if;
 
-            when DONE =>
+            when FIN =>
 
         end case;
     end process next_state;
@@ -104,11 +99,11 @@ begin
     output : process(all)
     begin
         done <= '0';
-        spi_en <= '0';
-        rx_en <= '0';
-        addr <= (others => '0');
-        tx_data <= (others => '0');
-        rx_len <= 0;
+        reg_in.start <= '0';
+        reg_in.rd_en <= '0';
+        reg_in.addr <= (others => '0');
+        reg_in.wr_data <= (others => '0');
+        reg_in.rd_len <= 0;
 
         clk_cnt_next <= 0;
 
@@ -117,11 +112,11 @@ begin
 
             when RST =>
                 if clk_cnt = 0 then
-                    spi_en <= '1';
-                    addr <= X"6B";
-                    tx_data <= X"80";
+                    reg_in.start <= '1';
+                    reg_in.addr <= X"6B";
+                    reg_in.wr_data <= X"80";
                 end if;
-                if spi_fin = '1' then
+                if reg_out.finish = '1' then
                     clk_cnt_next <= 0;
                 else
                     clk_cnt_next <= clk_cnt + 1;
@@ -136,11 +131,11 @@ begin
             
             when WAKEUP =>
                 if clk_cnt = 0 then
-                    spi_en <= '1';
-                    addr <= X"6B";
-                    tx_data <= X"00";
+                    reg_in.start <= '1';
+                    reg_in.addr <= X"6B";
+                    reg_in.wr_data <= X"00";
                 end if;
-                if spi_fin = '1' then
+                if reg_out.finish = '1' then
                     clk_cnt_next <= 0;
                 else
                     clk_cnt_next <= clk_cnt + 1;
@@ -148,23 +143,23 @@ begin
 
             when RD_WAI =>
                 if clk_cnt = 0 then
-                    spi_en <= '1';
-                    rx_en <= '1';
-                    addr <= X"6B";
-                    rx_len <= 1;
+                    reg_in.start <= '1';
+                    reg_in.rd_en <= '1';
+                    reg_in.addr <= X"75";
+                    reg_in.rd_len <= 1;
                 end if;
-                if rx_rdy = '1' then
+                if reg_out.rd_rdy = '1' then
                     dbg.en <= '1';
-                    dbg.msg(0) <= rx_data;
+                    dbg.msg(0) <= reg_out.rd_data;
                     dbg.len <= 1;
                 end if;
-                if spi_fin = '1' then
+                if reg_out.finish = '1' then
                     clk_cnt_next <= 0;
                 else
                     clk_cnt_next <= clk_cnt + 1;
                 end if;
 
-            when DONE =>
+            when FIN =>
                 done <= '1';
 
         end case;
