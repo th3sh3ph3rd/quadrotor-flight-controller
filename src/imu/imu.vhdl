@@ -7,6 +7,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.imu_spi_if.all;
+use work.debug_pkg.all;
 use work.imu_pkg.all;
 
 entity imu is
@@ -25,11 +27,14 @@ entity imu is
             imu_rdy : out std_logic;
             roll    : out imu_angle;
             pitch   : out imu_angle;
-            yaw     : out imu_angle 
+            yaw     : out imu_angle; 
             
             -- SPI
             spi_in  : in imu_spi_in;
-            spi_out : out imu_spi_out
+            spi_out : out imu_spi_out;
+            
+            -- debug port
+            dbg     : out debug_if
         );
 
 end entity imu;

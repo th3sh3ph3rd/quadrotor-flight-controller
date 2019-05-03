@@ -35,7 +35,7 @@ package imu_pkg is
 
             -- SPI
             spi_in  : in imu_spi_in;
-            spi_out : out imu_spi_out
+            spi_out : out imu_spi_out; 
  
             -- debug port
             dbg     : out debug_if

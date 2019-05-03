@@ -10,6 +10,8 @@ use ieee.numeric_std.all;
 use work.sync_pkg.all;
 use work.debug_pkg.all;
 
+use work.imu_pkg.all;
+
 entity flight_controller_top is
   
     port
@@ -103,25 +105,39 @@ begin
         rx => pmoda(1),
         tx => pmoda(0)
     );
+
+    imu_inst : imu
+    generic map
+    (
+        CLK_FREQ => SYS_CLK_FREQ 
+    ) 
+    port map
+    (
+        clk => clk,    
+        res_n => res_n,
+        imu_rdy => open,
+        roll => open,
+        pitch => open,
+        yaw => open,
+        spi_in.sdi => pmodb(0), 
+        spi_out.cs_n => pmodb(1),
+        spi_out.scl => pmodb(2),
+        spi_out.sdo => pmodb(3),
+        dbg => dbg 
+    );
  
     process(all) is
     begin
         
-        dbg.msg <= str_to_debug_msg("hello pc!");
-        dbg.len <= 9;
-        
         if res_n = '0' then
             counter <= 0;
             led_state <= '1';
-            dbg.en <= '0';
         elsif rising_edge(clk) then
             if counter = SYS_CLK_FREQ-1 then
                 led_state <= not led_state;
                 counter <= 0;
-                dbg.en <= '1';
             else
                 counter <= counter + 1;
-                dbg.en <= '0';
             end if;
         end if;
 

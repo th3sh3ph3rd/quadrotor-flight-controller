@@ -28,8 +28,8 @@ package imu_spi_if is
     end record;
     
     type imu_spi_out is record
-        scl     : std_logic;
         cs_n    : std_logic;
+        scl     : std_logic;
         sdo     : std_logic;
     end record;
 
