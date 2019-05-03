@@ -139,7 +139,20 @@ begin
                 end if;
 
             when RD_WAI =>
-                -- read whoami register and print to uart
+                if clk_cnt = 0 then
+                    spi_en <= '1';
+                    rx_en <= '1';
+                    addr <= X"6B";
+                    rx_len <= 1;
+                end if;
+                if rx_rdy = '1' then
+
+                end if;
+                if spi_fin = '1' then
+                    clk_cnt_next <= 0;
+                else
+                    clk_cnt_next <= clk_cnt + 1;
+                end if;
 
             when DONE =>
                 done <= '1';

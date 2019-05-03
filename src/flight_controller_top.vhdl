@@ -33,9 +33,7 @@ architecture structure of flight_controller_top is
     signal counter : natural range 0 to SYS_CLK_FREQ-1;
     signal led_state : std_logic;
 
-    signal en  : std_logic;
-    signal msg : debug_msg;
-    signal len : debug_len;
+    signal dbg : debug_if;
 
     component uart is
 
@@ -100,9 +98,7 @@ begin
         clk => clk, 
         res_n => res_n,
 
-        en => en,
-        msg => msg,
-        len => len,
+        dbg => dbg, 
 
         rx => pmoda(1),
         tx => pmoda(0)
@@ -111,17 +107,17 @@ begin
     process(all) is
     begin
         
-        msg <= str_to_debug_msg("hello pc!");
-        len <= 9;
+        dbg.msg <= str_to_debug_msg("hello pc!");
+        dbg.len <= 9;
 
         if rising_edge(clk) then
             if counter = SYS_CLK_FREQ-1 then
                 led_state <= not led_state;
                 counter <= 0;
-                en <= '1';
+                dbg.en <= '1';
             else
                 counter <= counter + 1;
-                en <= '0';
+                dbg.en <= '0';
             end if;
         end if;
 

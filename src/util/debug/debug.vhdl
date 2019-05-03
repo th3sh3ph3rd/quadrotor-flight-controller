@@ -24,9 +24,7 @@ entity debug is
             res_n   : in std_logic;
 
             -- debug interface
-            en      : in std_logic;
-            msg     : in debug_msg;
-            len     : in debug_len;
+            dbg     : in debug_if;    
 
             -- uart io pins
             rx      : in std_logic;
@@ -102,7 +100,7 @@ begin
         case state is
             
             when IDLE =>
-                if en = '1' then
+                if dbg.en = '1' then
                     state_next <= WAIT_UART;
                 end if;
 
@@ -135,9 +133,9 @@ begin
         case state is
             
             when IDLE =>
-                if en = '1' then
-                    regs_next.msg <= msg;
-                    regs_next.len <= len;
+                if dbg.en = '1' then
+                    regs_next.msg <= dbg.msg;
+                    regs_next.len <= dbg.len;
                 end if;
 
             when WRITE =>

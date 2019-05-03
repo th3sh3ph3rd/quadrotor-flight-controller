@@ -13,6 +13,12 @@ package debug_pkg is
     type debug_msg is array (0 to DEBUG_MSG_WIDTH-1) of std_logic_vector(7 downto 0);
     subtype debug_len is natural range 0 to DEBUG_MSG_WIDTH;
 
+    type debug_if is record
+        en  : std_logic;
+        msg : debug_msg;
+        len : debug_len;
+    end record;
+
     component debug is
 
         generic
@@ -27,9 +33,7 @@ package debug_pkg is
             res_n   : in std_logic;
 
             -- debug interface
-            en      : in std_logic;
-            msg     : in debug_msg;
-            len     : in debug_len;
+            dbg     : in debug_if;    
 
             -- uart io pins
             rx      : in std_logic;
