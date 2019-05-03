@@ -11,6 +11,10 @@ use work.imu_pkg.all;
 
 entity imu is
 
+        generic
+        (
+            CLK_FREQ : integer 
+        ); 
         port
         (
             -- global synchronization
@@ -49,8 +53,7 @@ architecture structure of imu is
         generic
         (
             CLK_DIVISIOR : integer;
-        );
-        
+        );    
         port
         (
             -- global synchronization
@@ -77,6 +80,34 @@ architecture structure of imu is
     end component imu_spi;
 
     component imu_init is
+        
+        generic
+        (
+            CLK_FREQ : integer 
+        ); 
+        port
+        (
+            -- global synchronization
+            clk     : in std_logic;
+            res_n   : in std_logic;
+
+            -- init signals
+            init    : in std_logic;
+            done    : out std_logic 
+          
+            -- communication interface for SPI
+            spi_en  : out std_logic;
+            spi_fin : in std_logic;
+            rx_en   : out std_logic;
+            rx_rdy  : in std_logic;
+            addr    : out std_logic_vector(7 downto 0);
+            tx_data : out std_logic_vector(7 downto 0);
+            rx_len  : out natural;
+            rx_data : in std_logic_vector(7 downto 0);
+
+            -- debug port
+            dbg     : out debug_if;
+        );
 
     end component imu_init;
 
@@ -86,7 +117,7 @@ architecture structure of imu is
 
 begin
 
-    entity imu_spi
+    imu_spi_inst : imu_spi
     generic map
     (
         CLK_DIVISOR => 4
@@ -97,6 +128,19 @@ begin
         res_n <= res_n,
         
     );
+
+    imu_init_inst : imu_init
+    generic map
+    (
+        CLK_DIVISOR => 4
+    )
+    port map
+    (
+        clk <= clk,
+        res_n <= res_n,
+        
+    );
+
 
     -- TODO create SPI mux dependant init finished signal
 

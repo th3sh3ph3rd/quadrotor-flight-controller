@@ -7,6 +7,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.debug_pkg.all;
+
 entity imu_init is
 
         generic
@@ -22,7 +24,7 @@ entity imu_init is
             -- init signals
             init    : in std_logic;
             done    : out std_logic 
-           
+          
             -- communication interface for SPI
             spi_en  : out std_logic;
             spi_fin : in std_logic;
@@ -32,6 +34,9 @@ entity imu_init is
             tx_data : out std_logic_vector(7 downto 0);
             rx_len  : out natural;
             rx_data : in std_logic_vector(7 downto 0);
+
+            -- debug port
+            dbg     : out debug_if;
         );
 
 end entity imu_init;
@@ -87,6 +92,9 @@ begin
                 end if;
 
             when RD_WAI =>
+                if spi_fin = '1' then
+                    state_next = DONE;
+                end if;
 
             when DONE =>
 
@@ -146,7 +154,9 @@ begin
                     rx_len <= 1;
                 end if;
                 if rx_rdy = '1' then
-
+                    dbg.en <= '1';
+                    dbg.msg(0) <= rx_data;
+                    dbg.len <= 1;
                 end if;
                 if spi_fin = '1' then
                     clk_cnt_next <= 0;

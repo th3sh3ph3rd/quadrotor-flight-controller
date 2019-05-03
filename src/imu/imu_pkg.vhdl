@@ -14,6 +14,10 @@ package imu_pkg is
 
     component imu is
 
+        generic
+        (
+            CLK_FREQ : integer 
+        ); 
         port
         (
             -- global synchronization

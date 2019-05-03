@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.imu_spi_if.all;
+
 entity imu_spi_tb is
 end entity imu_spi_tb;
 
@@ -13,9 +15,9 @@ architecture tb of imu_spi_tb is
 
     signal clk, res_n : std_logic;
 
-    signal start, finish, rx_en, sdi : std_logic;
-    signal addr, tx_data : std_logic_vector(7 downto 0);
-    signal rx_len : natural;
+    signal reg_in   : imu_reg_in;
+    signal reg_out  : imu_reg_out;
+    signal spi_in   : imu_spi_in;
 
     component imu_spi is
         generic
@@ -29,20 +31,12 @@ architecture tb of imu_spi_tb is
             res_n   : in std_logic;
 
             -- communication interface
-            start   : in std_logic;
-            finish  : out std_logic;
-            rx_en   : in std_logic;
-            rx_rdy  : out std_logic;
-            addr    : in std_logic_vector(7 downto 0);
-            tx_data : in std_logic_vector(7 downto 0);
-            rx_len  : in natural;
-            rx_data : out std_logic_vector(7 downto 0);
+            reg_in  : in imu_reg_in;
+            reg_out : out imu_reg_out; 
 
             -- SPI
-            scl     : out std_logic;
-            cs_n    : out std_logic;
-            sdo     : out std_logic;
-            sdi     : in std_logic
+            spi_in  : in imu_spi_in;
+            spi_out : out imu_spi_out
         );
     end component imu_spi;
 
@@ -57,15 +51,10 @@ begin
     (
        clk => clk,
        res_n => res_n,
-       start => start,
-       finish => finish,
-       rx_en => rx_en,
-       rx_rdy => open,
-       addr => addr,
-       tx_data => tx_data,
-       rx_len => rx_len,
-       rx_data => open,
-       sdi => sdi
+       reg_in => reg_in,
+       reg_out => reg_out,
+       spi_in => spi_in,
+       spi_out => open
     );
 
     clk_gen : process
@@ -79,109 +68,109 @@ begin
     stimulus : process
     begin
         res_n <= '0';
-        start <= '0';
-        rx_en <= '0';
-        addr <= (others => '0');
-        tx_data <= (others => '0');
-        rx_len <= 0;
-        sdi <= '0';
+        reg_in.start <= '0';
+        reg_in.rd_en <= '0';
+        reg_in.addr <= (others => '0');
+        reg_in.wr_data <= (others => '0');
+        reg_in.rd_len <= 0;
+        spi_in.sdi <= '0';
         wait for SYS_CLK_PERIOD;
         res_n <= '1';
 
         -- simple tx test
-        start <= '1';
-        addr <= "10011001";
-        tx_data <= "10101010";
+        reg_in.start <= '1';
+        reg_in.addr <= "10011001";
+        reg_in.wr_data <= "10101010";
         wait for SYS_CLK_PERIOD;
-        start <= '0';
-        wait until finish = '1';
+        reg_in.start <= '0';
+        wait until reg_out.finish = '1';
         wait for SYS_CLK_PERIOD*2;
 
         -- simple rx test
-        start <= '1';
-        rx_en <= '1';
-        addr <= "11001100";
-        rx_len <= 1;
+        reg_in.start <= '1';
+        reg_in.rd_en <= '1';
+        reg_in.addr <= "11001100";
+        reg_in.rd_len <= 1;
         wait for SYS_CLK_PERIOD;
-        start <= '0';
+        reg_in.start <= '0';
         wait for SYS_CLK_PERIOD + SPI_CLK_PERIOD*8;
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
-        wait until finish = '1';
+        spi_in.sdi <= '1';
+        wait until reg_out.finish = '1';
         wait for SYS_CLK_PERIOD*2;
 
         -- multi rx test
-        start <= '1';
-        rx_en <= '1';
-        addr <= "11001100";
-        rx_len <= 3;
+        reg_in.start <= '1';
+        reg_in.rd_en <= '1';
+        reg_in.addr <= "11001100";
+        reg_in.rd_len <= 3;
         wait for SYS_CLK_PERIOD;
-        start <= '0';
+        reg_in.start <= '0';
         wait for SYS_CLK_PERIOD + SPI_CLK_PERIOD*8;
         -- 10011001
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD;
         -- 11110000
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD;
         -- 01101101
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
+        spi_in.sdi <= '1';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '0';
+        spi_in.sdi <= '0';
         wait for SPI_CLK_PERIOD; 
-        sdi <= '1';
-        wait until finish = '1';
+        spi_in.sdi <= '1';
+        wait until reg_out.finish = '1';
 
         wait;
     end process stimulus;

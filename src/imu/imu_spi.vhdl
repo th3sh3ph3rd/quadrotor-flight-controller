@@ -7,6 +7,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.imu_spi_if.all;
+
 entity imu_spi is
         
         generic
@@ -20,20 +22,12 @@ entity imu_spi is
             res_n   : in std_logic;
 
             -- communication interface
-            start   : in std_logic;
-            finish  : out std_logic;
-            rx_en   : in std_logic;
-            rx_rdy  : out std_logic;
-            addr    : in std_logic_vector(7 downto 0);
-            tx_data : in std_logic_vector(7 downto 0);
-            rx_len  : in natural;
-            rx_data : out std_logic_vector(7 downto 0);
+            reg_in  : in imu_reg_in;
+            reg_out : out imu_reg_out; 
 
             -- SPI
-            scl     : out std_logic;
-            cs_n    : out std_logic;
-            sdo     : out std_logic;
-            sdi     : in std_logic
+            spi_in  : in imu_spi_in;
+            spi_out : out imu_spi_out
         );
 
 end entity imu_spi;
@@ -48,7 +42,7 @@ architecture behavior of imu_spi is
     type counters is record
         clk      : natural range 0 to CLK_DIVISOR-1;
         bits     : natural range 0 to 7;
-        rx_bytes : natural; --TODO can we impose a range limit? if yes, also change interface
+        rd_bytes : natural; --TODO can we impose a range limit? if yes, also change interface
     end record;
     signal cnt, cnt_next : counters;
 
@@ -56,7 +50,7 @@ architecture behavior of imu_spi is
     type buffers is record
         addr   : std_logic_vector(7 downto 0);
         data   : std_logic_vector(7 downto 0);
-        rx_len : natural;
+        rd_len : natural;
     end record;
     signal buf, buf_next : buffers;
 
@@ -68,10 +62,10 @@ begin
             state        <= IDLE;
             cnt.clk      <= 0;
             cnt.bits     <= 7;
-            cnt.rx_bytes <= 0;
+            cnt.rd_bytes <= 0;
             buf.addr     <= (others => '0');
             buf.data     <= (others => '0');
-            buf.rx_len   <= 0;
+            buf.rd_len   <= 0;
         elsif rising_edge(clk) then
             state   <= state_next;
             cnt     <= cnt_next;
@@ -85,7 +79,7 @@ begin
 
         case state is
             when IDLE =>
-                if start = '1' then
+                if reg_in.start = '1' then
                     state_next <= INIT;
                 end if;
 
@@ -100,8 +94,8 @@ begin
 
             when WRDATA =>
                 if cnt.bits = 0 and cnt.clk = CLK_DIVISOR-1 then
-                    if rx_en = '1' then
-                        if cnt.rx_bytes+1 = buf.rx_len then --TODO +1 is a dirty fix, maybe find nicer solution
+                    if reg_in.rd_en = '1' then
+                        if cnt.rd_bytes+1 = buf.rd_len then --TODO +1 is a dirty fix, maybe find nicer solution
                             state_next <= IDLE;
                         end if;
                     else
@@ -114,23 +108,23 @@ begin
 
     output : process(all)
     begin
-        finish  <= '0';
-        rx_rdy  <= '0';
-        rx_data <= buf.data;
-        scl     <= '1';
-        cs_n    <= '0';
-        sdo     <= 'Z'; --TODO tristate correct?
+        reg_out.finish  <= '0';
+        reg_out.rd_rdy  <= '0';
+        reg_out.rd_data <= buf.data;
+        spi_out.scl     <= '1';
+        spi_out.cs_n    <= '0';
+        spi_out.sdo     <= 'Z'; --TODO tristate correct?
         
         cnt_next <= cnt;
         buf_next <= buf;
 
         case state is
             when IDLE =>
-                cs_n <= '1';
-                if start = '1' then
-                    buf_next.addr    <= addr;
-                    buf_next.data    <= tx_data;
-                    buf_next.rx_len  <= rx_len;
+                spi_out.cs_n <= '1';
+                if reg_in.start = '1' then
+                    buf_next.addr    <= reg_in.addr;
+                    buf_next.data    <= reg_in.wr_data;
+                    buf_next.rd_len  <= reg_in.rd_len;
                 end if;
 
             when INIT =>
@@ -148,25 +142,25 @@ begin
                 end if;
 
                 if cnt.clk < CLK_DIVISOR/2 then
-                    scl <= '0';
+                    spi_out.scl <= '0';
                 end if;
 
-                sdo <= buf.addr(cnt.bits);
+                spi_out.sdo <= buf.addr(cnt.bits);
 
             when WRDATA =>
                 if cnt.clk = CLK_DIVISOR-1 then
                     cnt_next.clk <= 0;
                     if cnt.bits = 0 then
                         cnt_next.bits <= 7;
-                        if rx_en = '1' then
-                            cnt_next.rx_bytes <= cnt.rx_bytes + 1;
-                            rx_rdy <= '1';
-                            if cnt.rx_bytes+1 = buf.rx_len then --TODO +1 is a dirty fix, maybe find nicer solution
-                                cnt_next.rx_bytes <= 0;
-                                finish <= '1';
+                        if reg_in.rd_en = '1' then
+                            cnt_next.rd_bytes <= cnt.rd_bytes + 1;
+                            reg_out.rd_rdy <= '1';
+                            if cnt.rd_bytes+1 = buf.rd_len then --TODO +1 is a dirty fix, maybe find nicer solution
+                                cnt_next.rd_bytes <= 0;
+                                reg_out.finish <= '1';
                             end if;
                         else
-                            finish <= '1';
+                            reg_out.finish <= '1';
                         end if;
                     else
                         cnt_next.bits <= cnt.bits - 1;
@@ -176,16 +170,16 @@ begin
                 end if;
 
                 if cnt.clk < CLK_DIVISOR/2 then
-                    scl <= '0';
+                    spi_out.scl <= '0';
                 end if;
 
-                if rx_en = '1' then
-                    sdo <= '0'; -- write dummy bits on read
+                if reg_in.rd_en = '1' then
+                    spi_out.sdo <= '0'; -- write dummy bits on read
                     if cnt.clk = CLK_DIVISOR/2 then -- sample on clock transition
-                        buf_next.data <= buf.data(6 downto 0) & sdi;
+                        buf_next.data <= buf.data(6 downto 0) & spi_in.sdi;
                     end if;
                 else
-                    sdo <= buf.data(cnt.bits);
+                    spi_out.sdo <= buf.data(cnt.bits);
                 end if;
 
         end case;
