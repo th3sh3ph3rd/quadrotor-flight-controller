@@ -99,11 +99,14 @@ begin
     output : process(all)
     begin
         done <= '0';
+
         reg_in.start <= '0';
         reg_in.rd_en <= '0';
         reg_in.addr <= (others => '0');
         reg_in.wr_data <= (others => '0');
         reg_in.rd_len <= 0;
+
+        dbg.en <= '0';
 
         clk_cnt_next <= 0;
 

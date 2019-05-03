@@ -115,7 +115,7 @@ begin
     (
         clk => clk,    
         res_n => res_n,
-        imu_rdy => open,
+        imu_rdy => leds(1),
         roll => open,
         pitch => open,
         yaw => open,
@@ -144,7 +144,7 @@ begin
     end process;
 
     leds(0) <= led_state;
-    leds(4 downto 1) <= (others => '1');
+    leds(4 downto 2) <= (others => '1');
 
 end structure;
 
