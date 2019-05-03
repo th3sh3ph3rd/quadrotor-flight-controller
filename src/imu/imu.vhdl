@@ -49,7 +49,6 @@ architecture structure of imu is
     signal reg_out  : imu_reg_out;
 
     signal init_start, init_done : std_logic;
-    signal imu_state, imu_state_next : std_logic;
 
     component imu_spi is
 
@@ -105,7 +104,7 @@ begin
     imu_spi_inst : imu_spi
     generic map
     (
-        CLK_DIVISOR => 4
+        CLK_DIVISOR => 50 --6.25 MHz SPI
     )
     port map
     (
@@ -137,26 +136,19 @@ begin
     begin
         if res_n = '0' then
             clk_cnt <= 0;
-            imu_state <= '0';
         elsif rising_edge(clk) then
             clk_cnt <= clk_cnt + 1;
-            imu_state <= imu_state_next;
         end if; 
     end process sync;
    
     output : process(all)
     begin
-        imu_rdy <= not imu_state;
+        imu_rdy <= not init_done;
 
         init_start <= '0';
-        imu_state_next <= imu_state;
 
         if clk_cnt = INIT_WAIT_CLKS-1 then
             init_start <= '1';
-        end if;
-
-        if init_done = '1' then
-            imu_state_next <= '1';
         end if;
     end process output;
 

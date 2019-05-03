@@ -122,7 +122,11 @@ begin
             when IDLE =>
                 spi_out.cs_n <= '1';
                 if reg_in.start = '1' then
-                    buf_next.addr    <= reg_in.addr;
+                    if reg_in.rd_en = '1' then
+                        buf_next.addr    <= '1' & reg_in.addr(6 downto 0); --apply read flag
+                    else
+                        buf_next.addr    <= reg_in.addr;
+                    end if;
                     buf_next.data    <= reg_in.wr_data;
                     buf_next.rd_len  <= reg_in.rd_len;
                 end if;

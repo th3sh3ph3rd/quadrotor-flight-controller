@@ -107,6 +107,8 @@ begin
         reg_in.rd_len <= 0;
 
         dbg.en <= '0';
+        dbg.msg <= (others => (others => '0'));
+        dbg.len <= 0;
 
         clk_cnt_next <= 0;
 
@@ -136,7 +138,7 @@ begin
                 if clk_cnt = 0 then
                     reg_in.start <= '1';
                     reg_in.addr <= X"6B";
-                    reg_in.wr_data <= X"00";
+                    reg_in.wr_data <= X"01";
                 end if;
                 if reg_out.finish = '1' then
                     clk_cnt_next <= 0;
@@ -145,15 +147,15 @@ begin
                 end if;
 
             when RD_WAI =>
+                reg_in.rd_en <= '1';
                 if clk_cnt = 0 then
                     reg_in.start <= '1';
-                    reg_in.rd_en <= '1';
                     reg_in.addr <= X"75";
                     reg_in.rd_len <= 1;
                 end if;
                 if reg_out.rd_rdy = '1' then
                     dbg.en <= '1';
-                    dbg.msg(0) <= reg_out.rd_data;
+                    dbg.msg(0) <= reg_out.rd_data; --should be 0x71
                     dbg.len <= 1;
                 end if;
                 if reg_out.finish = '1' then
