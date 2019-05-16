@@ -34,6 +34,9 @@ end entity imu_spi;
 
 architecture behavior of imu_spi is
     
+    constant kp : natural := 50000000;
+    constant kd : natural := 50000000;
+    
     -- fsm state
     type state_type is (IDLE, INIT, WRADDR, WRDATA);
     signal state, state_next : state_type;

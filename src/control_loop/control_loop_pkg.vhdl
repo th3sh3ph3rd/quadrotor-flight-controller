@@ -34,6 +34,7 @@ package control_loop_pkg is
             roll_is     : in imu_angle;
             pitch_is    : in imu_angle;
             yaw_is      : in imu_angle;
+            new_state   : in std_logic;
 
             -- motor rpm values
             m0_rpm      : out motor_rmp;
