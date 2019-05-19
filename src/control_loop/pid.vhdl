@@ -26,15 +26,15 @@ entity pid is
 
             -- setpoint
             new_sp      : in std_logic;
-            setpoint    : in pid_in;
+            setpoint    : in pid_t;
             
             -- current state
             new_state   : in std_logic;
-            state       : in pid_in;
+            state       : in pid_t;
             
             -- control output
             pid_rdy     : out std_logic;
-            pid         : out pid_out;
+            pid         : out pid_t;
         );
 
 end entity pid;
@@ -50,9 +50,10 @@ architecture beh of pid is
     signal err_prev, err_prev_next  : pid_t;
 
     type pid_terms is record
-        p : pid_t;
-        i : pid_t;
-        d : pid_t;
+        p   : pid_t;
+        i   : pid_t;
+        d   : pid_t;
+        pid : pid_t;    
     end record;
     signal terms, terms_next : pid_terms;
 
@@ -65,7 +66,7 @@ begin
             sp       <= (others => '0');
             err      <= (others => '0');
             err_prev <= (others => '0');
-            terms    <= (others => '0', others => '0', others => '0';
+            terms    <= (others => '0', others => '0', others => '0', others => '0');
         elsif rising_edge(clk) then
             state    <= state_next;
             sp       <= sp_next;
@@ -108,9 +109,9 @@ begin
             sp_next <= sp;
         end if;
 
-        err_next <= err;
+        err_next      <= err;
         err_prev_next <= err_prev;
-        terms_next <= terms;
+        terms_next    <= terms;
 
         case state is
             when IDLE =>
@@ -121,12 +122,15 @@ begin
 
             when CALC_TERMS =>
                 terms_next.p <= gain_p * err;
-                terms_next.i <= gain_p * err;
-                terms_next.d <= gain_p * err;
+                terms_next.i <= gain_i * err + terms.i;
+                terms_next.d <= gain_d * (err - err_prev);
 
             when ADD_TERMS =>
+                terms_next.pid <= terms.p + terms.i + terms.d;
 
             when DONE =>
+                pid_rdy <= '1';
+                pid     <= terms.pid;
 
         end case;
     end process output;
