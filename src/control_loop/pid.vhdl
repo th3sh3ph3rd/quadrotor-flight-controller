@@ -39,7 +39,7 @@ entity pid is
 
 end entity pid;
 
-architecture beh of pid is
+architecture behavior of pid is
 
     -- fsm state
     type state_type is (IDLE, CALC_TERMS, ADD_TERMS, DONE);
@@ -147,5 +147,5 @@ begin
         end case;
     end process output;
 
-end architecture beh;
+end architecture behavior;
 
