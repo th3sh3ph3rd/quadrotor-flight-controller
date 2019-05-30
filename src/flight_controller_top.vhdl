@@ -30,7 +30,7 @@ architecture structure of flight_controller_top is
     constant SYS_CLK_FREQ   : natural := 50000000;
     constant BAUD_RATE      : natural := 9600;
 
-    signal res_n : std_logic;
+    signal res_n, ss_n, sclk, mosi : std_logic;
 
     signal counter : natural range 0 to SYS_CLK_FREQ-1;
     signal led_state : std_logic;
@@ -88,7 +88,49 @@ begin
         data_in => buttons(0),
         data_out => res_n
     );
+
+    slave_select_sync : sync
+    generic map 
+    (
+        SYNC_STAGES => 2,
+        RESET_VALUE => '1'
+    )
+    port map 
+    (
+        clk => clk,
+        res_n => '1',
+        data_in => pmodb(1),
+        data_out => ss_n
+    );
     
+    sclk_sync : sync
+    generic map 
+    (
+        SYNC_STAGES => 2,
+        RESET_VALUE => '1'
+    )
+    port map 
+    (
+        clk => clk,
+        res_n => '1',
+        data_in => pmodb(2),
+        data_out => sclk
+    );
+    
+    mosi_sync : sync
+    generic map 
+    (
+        SYNC_STAGES => 2,
+        RESET_VALUE => '1'
+    )
+    port map 
+    (
+        clk => clk,
+        res_n => '1',
+        data_in => pmodb(0),
+        data_out => mosi
+    );
+     
     debug_inst : debug
     generic map
     (
@@ -107,10 +149,6 @@ begin
     );
 
     imu_inst : imu
-    generic map
-    (
-        CLK_FREQ => SYS_CLK_FREQ 
-    ) 
     port map
     (
         clk => clk,    
@@ -119,11 +157,10 @@ begin
         roll => open,
         pitch => open,
         yaw => open,
-        spi_in.sdi => pmodb(0), 
-        spi_out.cs_n => pmodb(1),
-        spi_out.scl => pmodb(2),
-        spi_out.sdo => pmodb(3),
-        dbg => dbg 
+        ss_n => ss_n, 
+        sclk => sclk,
+        mosi => mosi,
+        miso => pmodb(3)
     );
  
     process(all) is
