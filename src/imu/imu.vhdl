@@ -1,22 +1,16 @@
 --
 -- @author Jan Nausner <jan.nausner@gmail.com>
--- @date 12.04.2019
+-- @date 28.05.2019
 --
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.imu_spi_if.all;
-use work.debug_pkg.all;
 use work.imu_pkg.all;
 
 entity imu is
 
-        generic
-        (
-            CLK_FREQ : integer 
-        ); 
         port
         (
             -- global synchronization
@@ -30,129 +24,136 @@ entity imu is
             yaw     : out imu_angle; 
             
             -- SPI
-            spi_in  : in imu_spi_in;
-            spi_out : out imu_spi_out;
-            
-            -- debug port
-            dbg     : out debug_if
+            ss_n    : in std_logic;
+            sclk    : in std_logic;
+            mosi    : in std_logic;
+            miso    : out std_logic
         );
 
 end entity imu;
 
-architecture structure of imu is
+architecture behavior of imu is
     
-    -- time constants
-    constant INIT_WAIT_CLKS : natural := CLK_FREQ/1000; -- 1 ms
-    signal clk_cnt : natural;
-    
-    signal reg_in   : imu_reg_in;
-    signal reg_out  : imu_reg_out;
+    -- fsm state
+    type state_type is (IDLE, RECV_ROLL, RECV_PITCH, RECV_YAW, DONE);
+    signal state, state_next : state_type;
 
-    signal init_start, init_done : std_logic;
+    signal sclk_prev : std_logic;
+    signal bit_cnt, bit_cnt_next : natural range 0 to IMU_ANGLE_WIDTH-1;
 
-    component imu_spi is
-
-        generic
-        (
-            CLK_DIVISOR : integer 
-        ); 
-        port
-        (
-            -- global synchronization
-            clk     : in std_logic;
-            res_n   : in std_logic;
-
-            -- communication interface
-            reg_in  : in imu_reg_in;
-            reg_out : out imu_reg_out; 
-
-            -- SPI
-            spi_in  : in imu_spi_in;
-            spi_out : out imu_spi_out
-        );
-
-    end component imu_spi;
-
-    component imu_init is
-        
-        generic
-        (
-            CLK_FREQ : integer 
-        ); 
-        port
-        (
-            -- global synchronization
-            clk     : in std_logic;
-            res_n   : in std_logic;
-
-            -- init signals
-            init    : in std_logic;
-            done    : out std_logic; 
-          
-            -- communication interface for SPI
-            reg_in  : out imu_reg_in;
-            reg_out : in imu_reg_out;
-
-            -- debug port
-            dbg     : out debug_if
-        );
-
-    end component imu_init;
+    -- buffers
+    type buffers is record
+        roll  : imu_angle;
+        pitch : imu_angle;
+        yaw   : imu_angle;
+    end record;
+    signal buf, buf_next : buffers;
 
 begin
-
-    imu_spi_inst : imu_spi
-    generic map
-    (
-        CLK_DIVISOR => 50 --6.25 MHz SPI
-    )
-    port map
-    (
-        clk => clk,
-        res_n => res_n,
-        reg_in => reg_in,
-        reg_out => reg_out,
-        spi_in => spi_in,
-        spi_out => spi_out 
-    );
-
-    imu_init_inst : imu_init
-    generic map
-    (
-        CLK_FREQ => CLK_FREQ
-    )
-    port map
-    (
-        clk => clk,
-        res_n => res_n,
-        init => init_start,
-        done => init_done,
-        reg_in => reg_in,
-        reg_out => reg_out,
-        dbg => dbg
-    );
-
+    
     sync : process(all)
     begin
         if res_n = '0' then
-            clk_cnt <= 0;
+            state       <= IDLE;
+            sclk_prev   <= '0';
+            bit_cnt     <= 0;
+            buf.roll    <= (others => '0');
+            buf.pitch   <= (others => '0');
+            buf.yaw     <= (others => '0');
         elsif rising_edge(clk) then
-            clk_cnt <= clk_cnt + 1;
-        end if; 
+            state     <= state_next;
+            sclk_prev <= sclk;
+            bit_cnt   <= bit_cnt_next;
+            buf       <= buf_next;
+        end if;
     end process sync;
-   
+
+    next_state : process(all)
+    begin
+        state_next <= state;
+
+        case state is
+            when IDLE =>
+                if ss_n = '0' then
+                    state_next <= RECV_ROLL;
+                end if;
+
+            when RECV_ROLL =>
+                if bit_cnt = IMU_ANGLE_WIDTH-1 and sclk_prev = '1' and sclk = '0' then
+                    state_next <= RECV_PITCH;
+                end if;
+
+            when RECV_PITCH =>
+                if bit_cnt = IMU_ANGLE_WIDTH-1 and sclk_prev = '1' and sclk = '0' then
+                    state_next <= RECV_YAW;
+                end if;
+
+            when RECV_YAW =>
+                if bit_cnt = IMU_ANGLE_WIDTH-1 and sclk_prev = '1' and sclk = '0' then
+                    state_next <= DONE;
+                end if;
+
+            when DONE =>
+                if ss_n = '1' then
+                    state_next <= IDLE;
+                end if;
+
+        end case;
+    end process next_state;
+
     output : process(all)
     begin
-        imu_rdy <= not init_done;
+        imu_rdy  <= '0';
+        roll     <= buf.roll;
+        pitch    <= buf.pitch;
+        yaw      <= buf.yaw;
+        miso     <= 'Z';
+        
+        bit_cnt_next <= bit_cnt;
+        buf_next <= buf;
 
-        init_start <= '0';
+        case state is
+            when IDLE =>
+                miso <= 'Z';
 
-        if clk_cnt = INIT_WAIT_CLKS-1 then
-            init_start <= '1';
-        end if;
+            when RECV_ROLL =>
+                miso <= '0';
+                if sclk_prev = '1' and sclk = '0' then --detect falling edge
+                    buf_next.roll <= buf.roll(IMU_ANGLE_WIDTH-2 downto 0) & mosi;
+                    if bit_cnt = IMU_ANGLE_WIDTH-1 then
+                        bit_cnt_next <= 0;
+                    else
+                        bit_cnt_next <= bit_cnt + 1;
+                    end if;
+                end if;
+
+            when RECV_PITCH =>
+                miso <= '0';
+                if sclk_prev = '1' and sclk = '0' then 
+                    buf_next.pitch <= buf.pitch(IMU_ANGLE_WIDTH-2 downto 0) & mosi;
+                    if bit_cnt = IMU_ANGLE_WIDTH-1 then
+                        bit_cnt_next <= 0;
+                    else
+                        bit_cnt_next <= bit_cnt + 1;
+                    end if;
+                end if;
+
+            when RECV_YAW =>
+                miso <= '0';
+                if sclk_prev = '1' and sclk = '0' then
+                    buf_next.yaw <= buf.yaw(IMU_ANGLE_WIDTH-2 downto 0) & mosi;
+                    if bit_cnt = IMU_ANGLE_WIDTH-1 then
+                        bit_cnt_next <= 0;
+                    else
+                        bit_cnt_next <= bit_cnt + 1;
+                    end if;
+                end if;
+
+            when DONE =>
+                imu_rdy <= '1';
+
+        end case;
     end process output;
 
-    -- TODO create SPI and debug mux dependant init finished signal
-
-end architecture structure;
+end architecture behavior;
 

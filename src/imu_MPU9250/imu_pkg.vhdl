@@ -1,11 +1,14 @@
 --
 -- @author Jan Nausner <jan.nausner@gmail.com>
--- @date 28.05.2019
+-- @date 12.04.2019
 --
 
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+
+use work.imu_spi_if.all;
+use work.debug_pkg.all;
 
 package imu_pkg is
 
@@ -14,6 +17,10 @@ package imu_pkg is
 
     component imu is
 
+        generic
+        (
+            CLK_FREQ : integer 
+        ); 
         port
         (
             -- global synchronization
@@ -27,10 +34,11 @@ package imu_pkg is
             yaw     : out imu_angle;
 
             -- SPI
-            ss_n    : in std_logic;
-            sclk    : in std_logic;
-            mosi    : in std_logic;
-            miso    : out std_logic
+            spi_in  : in imu_spi_in;
+            spi_out : out imu_spi_out; 
+ 
+            -- debug port
+            dbg     : out debug_if
         );
 
     end component imu;
