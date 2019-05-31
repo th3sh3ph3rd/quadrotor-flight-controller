@@ -83,7 +83,7 @@ begin
         sclk <= '0';
         ss_n <= '1';
         mosi <= '0';
-        new_set <= '1';
+        new_set <= '0';
         wait for SYS_CLK_PERIOD;
         res_n <= '1';
         wait for SYS_CLK_PERIOD;

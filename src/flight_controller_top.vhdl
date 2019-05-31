@@ -30,7 +30,7 @@ architecture structure of flight_controller_top is
     constant SYS_CLK_FREQ   : natural := 50000000;
     constant BAUD_RATE      : natural := 9600;
 
-    signal res_n, ss_n, sclk, mosi : std_logic;
+    signal res_n, ss_n, sclk, mosi, rx : std_logic;
 
     signal counter : natural range 0 to SYS_CLK_FREQ-1;
     signal led_state : std_logic;
@@ -130,6 +130,20 @@ begin
         data_in => pmodb(0),
         data_out => mosi
     );
+    
+    rx_sync : sync
+    generic map 
+    (
+        SYNC_STAGES => 2,
+        RESET_VALUE => '1'
+    )
+    port map 
+    (
+        clk => clk,
+        res_n => '1',
+        data_in => pmoda(1),
+        data_out => rx
+    );
      
     debug_inst : debug
     generic map
@@ -144,7 +158,7 @@ begin
 
         dbg => dbg, 
 
-        rx => pmoda(1),
+        rx => rx,
         tx => pmoda(0)
     );
 

@@ -8,6 +8,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.pid_types.all;
+use work.control_loop_pkg.all;
 
 entity calc_motor_speed is
 
@@ -29,10 +30,10 @@ entity calc_motor_speed is
 
             -- motor speed values
             new_speed   : out std_logic;
-            s_m0        : out pid_t;
-            s_m1        : out pid_t;
-            s_m2        : out pid_t;
-            s_m3        : out pid_t
+            s_m0        : out motor_rpm;
+            s_m1        : out motor_rpm;
+            s_m2        : out motor_rpm;
+            s_m3        : out motor_rpm
         );
 
 end entity calc_motor_speed;
@@ -67,10 +68,10 @@ begin
     
     output : process(all)
     begin
-        s_m0 <= speed.m0;
-        s_m1 <= speed.m1;
-        s_m2 <= speed.m2;
-        s_m3 <= speed.m3;
+        s_m0 <= std_logic_vector(speed.m0);
+        s_m1 <= std_logic_vector(speed.m1);
+        s_m2 <= std_logic_vector(speed.m2);
+        s_m3 <= std_logic_vector(speed.m3);
         new_speed <= new_s;
         
         new_s_next <= '0';

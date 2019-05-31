@@ -56,7 +56,7 @@ end entity control_loop;
 
 architecture structure of control_loop is
 
-    signal roll_rdy, pitch_rdy, yaw_rdy : std_logic;
+    signal roll_rdy, pitch_rdy, yaw_rdy, new_thrust : std_logic;
     signal roll_pid, pitch_pid, yaw_pid : pid_t;
 
     component pid is
@@ -105,10 +105,10 @@ architecture structure of control_loop is
 
             -- motor speeds
             new_speed   : out std_logic;
-            s_m0        : out pid_t;
-            s_m1        : out pid_t;
-            s_m2        : out pid_t;
-            s_m3        : out pid_t
+            s_m0        : out motor_rpm;
+            s_m1        : out motor_rpm;
+            s_m2        : out motor_rpm;
+            s_m3        : out motor_rpm
         );
     end component calc_motor_speed;
 
@@ -171,6 +171,8 @@ begin
         pid => yaw_pid
     );
 
+    new_thrust <= roll_rdy and pitch_rdy and yaw_rdy;
+
     motor_speed : calc_motor_speed
     generic map
     (
@@ -180,15 +182,15 @@ begin
     (
         clk => clk,         
         res_n => res_n, 
-        new_thrust => roll_rdy and pitch_rdy and yaw_rdy, --TODO make this better
+        new_thrust => new_thrust,
         t_roll => roll_pid,
         t_pitch => pitch_pid,
         t_yaw => yaw_pid,
-        new_speed => open,
-        s_m0 => open,
-        s_m1 => open,
-        s_m2 => open,
-        s_m3 => open
+        new_speed => new_rpm,
+        s_m0 => m0_rpm,
+        s_m1 => m1_rpm,
+        s_m2 => m2_rpm,
+        s_m3 => m3_rpm
     );
 
 end architecture structure;

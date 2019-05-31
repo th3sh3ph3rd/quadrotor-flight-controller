@@ -35,7 +35,7 @@ end entity imu;
 architecture behavior of imu is
     
     -- fsm state
-    type state_type is (IDLE, RECV_ROLL, RECV_PITCH, RECV_YAW, DONE);
+    type state_type is (IDLE, RECV_ROLL, RECV_PITCH, RECV_YAW, DONE, WAIT_SS);
     signal state, state_next : state_type;
 
     signal sclk_prev : std_logic;
@@ -94,6 +94,9 @@ begin
                 end if;
 
             when DONE =>
+                state_next <= WAIT_SS;
+
+            when WAIT_SS =>
                 if ss_n = '1' then
                     state_next <= IDLE;
                 end if;
@@ -151,6 +154,8 @@ begin
 
             when DONE =>
                 imu_rdy <= '1';
+
+            when WAIT_SS =>
 
         end case;
     end process output;
