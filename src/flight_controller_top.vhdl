@@ -33,7 +33,9 @@ architecture structure of flight_controller_top is
     signal res_n, ss_n, sclk, mosi, rx : std_logic;
 
     signal counter : natural range 0 to SYS_CLK_FREQ-1;
-    signal led_state : std_logic;
+    signal led_state, imu_rdy : std_logic;
+
+    signal spi_cnt, spi_cnt_next : unsigned(3 downto 0);
 
     signal dbg : debug_if;
 
@@ -167,7 +169,7 @@ begin
     (
         clk => clk,    
         res_n => res_n,
-        imu_rdy => leds(1),
+        imu_rdy => imu_rdy,
         roll => open,
         pitch => open,
         yaw => open,
@@ -183,6 +185,7 @@ begin
         if res_n = '0' then
             counter <= 0;
             led_state <= '1';
+            spi_cnt <= (others => '0');
         elsif rising_edge(clk) then
             if counter = SYS_CLK_FREQ-1 then
                 led_state <= not led_state;
@@ -190,12 +193,15 @@ begin
             else
                 counter <= counter + 1;
             end if;
+            if imu_rdy = '1' then
+                spi_cnt <= spi_cnt + "0001";
+            end if;
         end if;
 
     end process;
 
     leds(0) <= led_state;
-    leds(4 downto 2) <= (others => '1');
+    leds(4 downto 1) <= std_logic_vector(spi_cnt);
 
 end structure;
 
