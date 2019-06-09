@@ -26,9 +26,9 @@ entity motor_pwm is
 
 end entity motor_pwm;
 
-architecture beh of motor_pwm is
+architecture behavior of motor_pwm is
 
 begin
 
-end architecture beh;
+end architecture behavior;
 
