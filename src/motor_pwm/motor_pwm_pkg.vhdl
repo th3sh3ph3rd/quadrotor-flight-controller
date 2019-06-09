@@ -10,7 +10,9 @@ use ieee.numeric_std.all;
 package motor_pwm_pkg is
 
     constant MOTOR_RPM_WIDTH : natural := 16;
-    subtype motor_rpm is std_logic_vector(MOTOR_RPM_WIDTH-1 downto 0); 
+    subtype motor_rpm is std_logic_vector(MOTOR_RPM_WIDTH-1 downto 0);
+
+    type pwm_dc is array(natural range <>) of unsigned;
      
     component motor_pwm is
 
@@ -21,7 +23,7 @@ package motor_pwm_pkg is
             res_n   : in std_logic;
 
             -- motor rpm value
-            rpm     : in motor_rmp;
+            rpm     : in motor_rpm;
 
             -- PWM output
             pwm     : out std_logic 

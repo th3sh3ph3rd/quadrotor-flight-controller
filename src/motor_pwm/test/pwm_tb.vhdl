@@ -2,6 +2,8 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.motor_pwm_pkg.all;
+
 entity pwm_tb is
 end entity pwm_tb;
 
@@ -9,22 +11,22 @@ architecture tb of pwm_tb is
 
     constant SYS_CLK_FREQ   : integer := 50000000;
     constant SYS_CLK_PERIOD : time := 20 ns;
-    constant PWM_FREQ       : integer := 100000; --100 KHz
-    constant PWM_PERIOD     : time := 10 us;
+    constant PWM_FREQ       : integer := 1000000; --1 MHz
+    constant PWM_PERIOD     : time := 1 us;
     constant PWM_CHANNELS   : integer := 4;
     constant PWM_DC_RES     : integer := 16;
 
     signal clk, res_n : std_logic;
 
-    signal new_dc : std_logic;
-    signal dc     : array(0 to PWM_CHANNELS-1) of unsigned(PWM_DC_RES-1 downto 0);
+    signal new_dc : std_logic; 
+    signal dc : pwm_dc(0 to PWM_CHANNELS-1)(PWM_DC_RES-1 downto 0);
 
     component pwm is
         generic
         (
-            SYS_CLK_FREQ : integer,
-            PWM_FREQ : integer,
-            PWM_CHANNELS : integer,
+            SYS_CLK_FREQ : integer;
+            PWM_FREQ : integer;
+            PWM_CHANNELS : integer;
             PWM_DC_RES : integer
         ); 
         port
@@ -35,7 +37,7 @@ architecture tb of pwm_tb is
 
             -- PWM duty cycle
             new_dc  : in std_logic;
-            dc      : in array(0 to PWM_CHANNELS-1) of unsigned(PWM_DC_RES-1 downto 0);
+            dc      : in pwm_dc(0 to PWM_CHANNELS-1)(PWM_DC_RES-1 downto 0);
 
             -- PWM output
             pwm     : out std_logic_vector(PWM_CHANNELS-1 downto 0) 
@@ -47,10 +49,10 @@ begin
     UUT : pwm
     generic map
     (
-        SYS_CLK_FREQ <= SYS_CLK_FREQ,
-        PWM_FREQ <= PWM_FREQ,
-        PWM_CHANNELS <= PWM_CHANNELS,
-        PWM_DC_RES <= PWM_DC_RES
+        SYS_CLK_FREQ => SYS_CLK_FREQ,
+        PWM_FREQ => PWM_FREQ,
+        PWM_CHANNELS => PWM_CHANNELS,
+        PWM_DC_RES => PWM_DC_RES
     )
     port map
     (
@@ -73,276 +75,59 @@ begin
     begin
         res_n <= '0';
         new_dc <= '0';
-        for i in 0 to PWM_CHANNEL-1 loop
+        for i in 0 to PWM_CHANNELS-1 loop
             dc(i) <= (others => '0');
         end loop;
         wait for SYS_CLK_PERIOD;
         res_n <= '1';
         wait for SYS_CLK_PERIOD;
-        
+       
+        -- 50% dc for all channels
         new_dc <= '1';
-        for i in 0 to PWM_CHANNEL-1 loop
-            dc(i) <= (2**PWM_DC_RES)/2;
+        for i in 0 to PWM_CHANNELS-1 loop
+            dc(i) <= to_unsigned((2**PWM_DC_RES)/2, PWM_DC_RES);
         end loop;
         wait for SYS_CLK_PERIOD;
         new_dc <= '0';
         wait for 4*PWM_PERIOD;
 
-
-        -- roll
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        wait for SPI_CLK_PERIOD;
+        -- 0% dc for all channels
+        new_dc <= '1';
+        for i in 0 to PWM_CHANNELS-1 loop
+            dc(i) <= to_unsigned(0, PWM_DC_RES);
+        end loop;
+        wait for SYS_CLK_PERIOD;
+        new_dc <= '0';
+        wait for PWM_PERIOD;
         
-        -- pitch
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        wait for SPI_CLK_PERIOD;
+        -- 10% dc for all channels
+        new_dc <= '1';
+        for i in 0 to PWM_CHANNELS-1 loop
+            dc(i) <= to_unsigned((2**PWM_DC_RES)/10, PWM_DC_RES);
+        end loop;
+        wait for SYS_CLK_PERIOD;
+        new_dc <= '0';
+        wait for 4*PWM_PERIOD;
         
-        -- yaw
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        mosi <= '0';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '1';
-        wait for SPI_CLK_PERIOD/2;
-        sclk <= '0';
-        wait for SPI_CLK_PERIOD;
+        -- 100% dc for all channels
+        new_dc <= '1';
+        for i in 0 to PWM_CHANNELS-1 loop
+            dc(i) <= to_unsigned((2**PWM_DC_RES)-1, PWM_DC_RES);
+        end loop;
+        wait for SYS_CLK_PERIOD;
+        new_dc <= '0';
+        wait for PWM_PERIOD;
         
-        ss_n <= '1';
-
+        -- different dc for each channel
+        new_dc <= '1';
+        dc(0) <= to_unsigned((2**PWM_DC_RES)/4, PWM_DC_RES);
+        dc(1) <= to_unsigned((2**PWM_DC_RES)/5, PWM_DC_RES);
+        dc(2) <= to_unsigned((2**PWM_DC_RES)/3, PWM_DC_RES);
+        dc(3) <= to_unsigned((2**PWM_DC_RES)/7, PWM_DC_RES);
+        wait for SYS_CLK_PERIOD;
+        new_dc <= '0';
+        wait for PWM_PERIOD;
+        
         wait;
     end process stimulus;
 
