@@ -70,6 +70,8 @@ set_global_assignment -name VHDL_FILE ../src/util/debug/debug_pkg.vhdl
 set_global_assignment -name VHDL_FILE ../src/util/debug/debug.vhdl
 set_global_assignment -name VHDL_FILE ../src/imu/imu_pkg.vhdl
 set_global_assignment -name VHDL_FILE ../src/imu/imu.vhdl
+set_global_assignment -name VHDL_FILE ../src/motor_pwm/motor_pwm_pkg.vhdl
+set_global_assignment -name VHDL_FILE ../src/motor_pwm/pwm.vhdl
 set_global_assignment -name VHDL_FILE ../src/flight_controller_top.vhdl
 set_global_assignment -name SDC_FILE SDC1.sdc
 set_location_assignment PIN_U20 -to buttons[3]

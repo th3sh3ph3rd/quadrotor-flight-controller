@@ -42,6 +42,7 @@ architecture behavior of pwm is
 
     type dc_cnt is array(0 to PWM_CHANNELS) of integer range 0 to (2**PWM_DC_RES)-1;
     signal dc_mid, dc_mid_next : dc_cnt;
+
 begin
     
     sync : process(all)
