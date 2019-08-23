@@ -9,12 +9,14 @@ end entity pwm_tb;
 
 architecture tb of pwm_tb is
 
-    constant SYS_CLK_FREQ   : integer := 50000000;
+    constant SYS_CLK_FREQ   : natural := 50000000;
     constant SYS_CLK_PERIOD : time := 20 ns;
-    constant PWM_FREQ       : integer := 1000000; --1 MHz
-    constant PWM_PERIOD     : time := 1 us;
-    constant PWM_CHANNELS   : integer := 4;
-    constant PWM_DC_RES     : integer := 16;
+    constant PWM_FREQ       : natural := 400; --1 MHz
+    constant PWM_PERIOD     : time := 2500 us;
+--    constant PWM_FREQ       : natural := 1000000; --1 MHz
+--    constant PWM_PERIOD     : time := 1 us;
+    constant PWM_CHANNELS   : natural := 4;
+    constant PWM_DC_RES     : natural := 16;
 
     signal clk, res_n : std_logic;
 
@@ -24,10 +26,10 @@ architecture tb of pwm_tb is
     component pwm is
         generic
         (
-            SYS_CLK_FREQ : integer;
-            PWM_FREQ : integer;
-            PWM_CHANNELS : integer;
-            PWM_DC_RES : integer
+            SYS_CLK_FREQ : natural;
+            PWM_FREQ : natural;
+            PWM_CHANNELS : natural;
+            PWM_DC_RES : natural
         ); 
         port
         (

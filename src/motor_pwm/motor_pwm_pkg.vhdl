@@ -8,6 +8,9 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 package motor_pwm_pkg is
+    
+    constant MIN_PWM_FREQ : natural := 10;
+    constant MAX_PWM_FREQ : natural := 1000000;
 
     constant MOTOR_RPM_WIDTH : natural := 16;
     subtype motor_rpm is std_logic_vector(MOTOR_RPM_WIDTH-1 downto 0);

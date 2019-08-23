@@ -30,9 +30,9 @@ architecture structure of flight_controller_top is
     constant SYS_CLK_FREQ   : natural := 50000000;
     constant BAUD_RATE      : natural := 9600;
     
-    constant PWM_FREQ       : integer := 450;
-    constant PWM_CHANNELS   : integer := 1;
-    constant PWM_DC_RES     : integer := 16;
+    constant PWM_FREQ       : natural := 400;
+    constant PWM_CHANNELS   : natural := 1;
+    constant PWM_DC_RES     : natural := 16;
 
     signal res_n, ss_n, sclk, mosi, rx : std_logic;
 
@@ -47,10 +47,10 @@ architecture structure of flight_controller_top is
 
         generic
         (
-            SYS_CLK_FREQ : integer;
-            PWM_FREQ : integer;
-            PWM_CHANNELS : integer;
-            PWM_DC_RES : integer
+            SYS_CLK_FREQ : natural;
+            PWM_FREQ : natural;
+            PWM_CHANNELS : natural;
+            PWM_DC_RES : natural
         ); 
         port
         (
@@ -119,7 +119,7 @@ begin
                 counter <= 0;
                 new_dc <= '1';
                 for i in 0 to PWM_CHANNELS-1 loop
-                    dc(i) <= dc(i) + 4095;
+                    dc(i) <= dc(i) + 4096;
                 end loop;
             else
                 counter <= counter + 1;

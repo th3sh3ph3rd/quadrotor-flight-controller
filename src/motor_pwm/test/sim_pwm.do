@@ -5,5 +5,5 @@ vsim -t ps work.pwm_tb
 
 add wave /pwm_tb/UUT/*
 
-run 20 us
+run 1000 ms
 
