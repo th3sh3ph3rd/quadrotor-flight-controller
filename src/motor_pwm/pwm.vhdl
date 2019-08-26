@@ -12,26 +12,26 @@ use work.motor_pwm_pkg.all;
 
 entity pwm is
 
-        generic
-        (
-            SYS_CLK_FREQ : natural;
-            PWM_FREQ : natural;
-            PWM_CHANNELS : natural;
-            PWM_DC_RES : natural
-        ); 
-        port
-        (
-            -- global synchronization
-            clk     : in std_logic;
-            res_n   : in std_logic;
+    generic
+    (
+        SYS_CLK_FREQ : natural;
+        PWM_FREQ : natural;
+        PWM_CHANNELS : natural;
+        PWM_DC_RES : natural
+    ); 
+    port
+    (
+        -- global synchronization
+        clk     : in std_logic;
+        res_n   : in std_logic;
 
-            -- PWM duty cycle
-            new_dc  : in std_logic;
-            dc      : in pwm_dc(0 to PWM_CHANNELS-1)(PWM_DC_RES-1 downto 0);
+        -- PWM duty cycle
+        new_dc  : in std_logic;
+        dc      : in pwm_dc(0 to PWM_CHANNELS-1)(PWM_DC_RES-1 downto 0);
 
-            -- PWM output
-            pwm     : out std_logic_vector(PWM_CHANNELS-1 downto 0) 
-        );
+        -- PWM output
+        pwm     : out std_logic_vector(PWM_CHANNELS-1 downto 0) 
+    );
 
 end entity pwm;
 
