@@ -30,7 +30,7 @@ architecture structure of flight_controller_top is
     constant SYS_CLK_FREQ   : natural := 50000000;
     constant BAUD_RATE      : natural := 9600;
     
-    constant PWM_FREQ       : natural := 400;
+    constant PWM_FREQ       : natural := 50;
     constant PWM_CHANNELS   : natural := 1;
     constant PWM_DC_RES     : natural := 16;
 
@@ -111,7 +111,7 @@ begin
             led_state <= '1';
             new_dc <= '1';
             for i in 0 to PWM_CHANNELS-1 loop
-                dc(i) <= to_unsigned(0, PWM_DC_RES);
+                dc(i) <= to_unsigned(3276, PWM_DC_RES);
             end loop;
         elsif rising_edge(clk) then
             if counter = SYS_CLK_FREQ-1 then
@@ -119,7 +119,11 @@ begin
                 counter <= 0;
                 new_dc <= '1';
                 for i in 0 to PWM_CHANNELS-1 loop
-                    dc(i) <= dc(i) + 4096;
+                    if dc(i) >= to_unsigned(6554, PWM_DC_RES) then
+                        dc(i) <= to_unsigned(3276, PWM_DC_RES);
+                    else
+                        dc(i) <= dc(i) + 33;
+                    end if;
                 end loop;
             else
                 counter <= counter + 1;
