@@ -8,13 +8,14 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.pid_types.all;
+use work.motor_pwm_pkg.all;
 use work.control_loop_pkg.all;
 
 entity calc_motor_speed is
 
         generic
         (
-            THRUST_Z : pid_t 
+            THRUST_Z : motor_rpm 
         ); 
         port
         (
@@ -24,9 +25,9 @@ entity calc_motor_speed is
 
             -- angular thrust
             new_thrust  : in std_logic;
-            t_roll      : in pid_t;
-            t_pitch     : in pid_t;
-            t_yaw       : in pid_t;
+            t_roll      : in pid_out;
+            t_pitch     : in pid_out;
+            t_yaw       : in pid_out;
 
             -- motor speed values
             new_speed   : out std_logic;
@@ -43,12 +44,13 @@ architecture behavior of calc_motor_speed is
     signal new_s, new_s_next : std_logic;
 
     type speeds is record
-        m0 : pid_t;
-        m1 : pid_t;
-        m2 : pid_t;
-        m3 : pid_t;    
+        m0 : motor_rpm;
+        m1 : motor_rpm;
+        m2 : motor_rpm;
+        m3 : motor_rpm;    
     end record;
     signal speed, speed_next : speeds;
+    signal t_roll_s, t_pitch_s, t_yaw_s : unsigned(MOTOR_RPM_WIDTH-1 downto 0);
 
 begin
     
@@ -80,11 +82,17 @@ begin
         if new_thrust = '1' then
             new_s_next    <= '1';
             -- remove fixed point shift
-            -- TODO make shift generic and define zero vector with appropriate length
-            speed_next.m0 <= THRUST_Z - ("0000" & t_roll(15 downto 4)) + ("0000" & t_pitch(15 downto 4)) + ("0000" & t_yaw(15 downto 4));
-            speed_next.m1 <= THRUST_Z - ("0000" & t_roll(15 downto 4)) - ("0000" & t_pitch(15 downto 4)) - ("0000" & t_yaw(15 downto 4));
-            speed_next.m2 <= THRUST_Z + ("0000" & t_roll(15 downto 4)) - ("0000" & t_pitch(15 downto 4)) + ("0000" & t_yaw(15 downto 4));
-            speed_next.m3 <= THRUST_Z + ("0000" & t_roll(15 downto 4)) + ("0000" & t_pitch(15 downto 4)) - ("0000" & t_yaw(15 downto 4));
+--            speed_next.m0 <= THRUST_Z - ("0000" & t_roll(15 downto 4)) + ("0000" & t_pitch(15 downto 4)) + ("0000" & t_yaw(15 downto 4));
+--            speed_next.m1 <= THRUST_Z - ("0000" & t_roll(15 downto 4)) - ("0000" & t_pitch(15 downto 4)) - ("0000" & t_yaw(15 downto 4));
+--            speed_next.m2 <= THRUST_Z + ("0000" & t_roll(15 downto 4)) - ("0000" & t_pitch(15 downto 4)) + ("0000" & t_yaw(15 downto 4));
+--            speed_next.m3 <= THRUST_Z + ("0000" & t_roll(15 downto 4)) + ("0000" & t_pitch(15 downto 4)) - ("0000" & t_yaw(15 downto 4));
+            t_roll_s <= unsigned(t_roll((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT));
+            t_pitch_s <= unsigned(t_pitch((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT));
+            t_yaw_s <= unsigned(t_yaw((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT));
+            speed_next.m0 <= std_logic_vector(unsigned(THRUST_Z) - t_roll_s + t_pitch_s + t_yaw_s);
+            speed_next.m1 <= std_logic_vector(unsigned(THRUST_Z) - t_roll_s - t_pitch_s - t_yaw_s);
+            speed_next.m2 <= std_logic_vector(unsigned(THRUST_Z) + t_roll_s - t_pitch_s + t_yaw_s);
+            speed_next.m3 <= std_logic_vector(unsigned(THRUST_Z) + t_roll_s + t_pitch_s - t_yaw_s);
         end if;
     end process output;
 

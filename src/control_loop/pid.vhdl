@@ -11,7 +11,7 @@ use work.pid_types.all;
 
 entity pid is
 
-        -- TODO add integral and control output saturation
+        -- TODO add integral saturation
         generic
         (
             GAIN_P : pid_gain; 
@@ -26,15 +26,15 @@ entity pid is
 
             -- setpoint
             new_sp      : in std_logic;
-            setpoint    : in pid_t;
+            setpoint    : in pid_in;
             
             -- current process state
             new_state   : in std_logic;
-            proc_state  : in pid_t;
+            proc_state  : in pid_in;
             
             -- control output
             pid_rdy     : out std_logic;
-            pid         : out pid_t
+            pid         : out pid_out
         );
 
 end entity pid;
@@ -45,18 +45,17 @@ architecture behavior of pid is
     type state_type is (IDLE, CALC_TERMS, ADD_TERMS, DONE);
     signal state, state_next : state_type;
  
-    signal sp, sp_next              : pid_t;
-    signal err, err_next            : pid_t;
-    signal err_prev, err_prev_next  : pid_t;
+    signal sp, sp_next              : pid_in;
+    signal err, err_next            : pid_in;
+    signal err_prev, err_prev_next  : pid_in;
 
     type pid_terms is record
-        p   : pid_t;
-        i   : pid_t;
-        d   : pid_t;
-        pid : pid_t;    
+        p   : pid_out;
+        i   : pid_out;
+        d   : pid_out;
+        pid : pid_out;    
     end record;
     signal terms, terms_next : pid_terms;
-    signal p_res, i_res, d_res : signed(31 downto 0); --TODO make generic
 
 begin
     
@@ -117,9 +116,6 @@ begin
         err_next      <= err;
         err_prev_next <= err_prev;
         terms_next    <= terms;
-        p_res         <= (others => '0');
-        i_res         <= (others => '0');
-        d_res         <= (others => '0');
 
         case state is
             when IDLE =>
@@ -128,14 +124,10 @@ begin
                     err_prev_next <= err;
                 end if;
 
-            --TODO can we just throw MSBs away? should be ok for not too abprubt changes
             when CALC_TERMS =>
-                p_res        <= GAIN_P * err;
-                terms_next.p <= p_res(15 downto 0);
-                i_res        <= GAIN_I * err;
-                terms_next.i <= i_res(15 downto 0) + terms.i;
-                d_res        <= GAIN_D * (err - err_prev);
-                terms_next.d <= d_res(15 downto 0);
+                terms_next.p <= GAIN_P * err / 2**FIXED_POINT_SHIFT; --remove double shift from multiplication
+                terms_next.i <= GAIN_I * err / 2**FIXED_POINT_SHIFT;
+                terms_next.d <= GAIN_D * (err - err_prev) / 2**FIXED_POINT_SHIFT;
 
             when ADD_TERMS =>
                 terms_next.pid <= terms.p + terms.i + terms.d;

@@ -19,6 +19,10 @@ package motor_pwm_pkg is
      
     component motor_pwm is
 
+        generic
+        (
+            SYS_CLK_FREQ : natural
+        ); 
         port
         (
             -- global synchronization
@@ -26,10 +30,11 @@ package motor_pwm_pkg is
             res_n   : in std_logic;
 
             -- motor rpm value
+            new_rpm : in std_logic;
             rpm     : in motor_rpm;
 
             -- PWM output
-            pwm     : out std_logic 
+            pwm_out : out std_logic 
         );
 
     end component motor_pwm;

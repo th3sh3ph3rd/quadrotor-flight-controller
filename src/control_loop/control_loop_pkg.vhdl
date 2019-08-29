@@ -10,13 +10,10 @@ use ieee.numeric_std.all;
 --TODO maybe use only the subtype
 use work.pid_types.all;
 use work.imu_pkg.all;
+use work.motor_pwm_pkg.all;
 
 package control_loop_pkg is
 
-    --TODO move definition to pwm module
-    constant MOTOR_RPM_WIDTH : natural := 16;
-    subtype motor_rpm is std_logic_vector(MOTOR_RPM_WIDTH-1 downto 0); 
-    
     component control_loop is
 
         generic
@@ -30,7 +27,7 @@ package control_loop_pkg is
             GAIN_P_YAW   : pid_gain; 
             GAIN_I_YAW   : pid_gain; 
             GAIN_D_YAW   : pid_gain; 
-            THRUST_Z     : pid_t 
+            THRUST_Z     : motor_rpm 
         ); 
         port
         (

@@ -38,11 +38,13 @@ end entity pwm;
 architecture behavior of pwm is
 
     constant PWM_CLKS : natural := SYS_CLK_FREQ / PWM_FREQ;
+    
     signal cnt, cnt_next : natural range 0 to PWM_CLKS-1;
     signal dc_buf, dc_buf_next : pwm_dc(0 to PWM_CHANNELS-1)(PWM_DC_RES-1 downto 0);
 
     type dc_cnt is array(0 to PWM_CHANNELS) of natural range 0 to PWM_CLKS-1;
     signal dc_mid, dc_mid_next : dc_cnt;
+    
     constant MAX_MUL_BITS : natural := natural(ceil(log2(real(2**PWM_DC_RES-1)*real(PWM_CLKS-1)))); 
     type mul is array(0 to PWM_CHANNELS-1) of unsigned(MAX_MUL_BITS-1 downto 0); --account for multiplication overflow
     signal mul_tmp : mul;

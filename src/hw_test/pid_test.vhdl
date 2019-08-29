@@ -1,6 +1,6 @@
 --
 -- @author Jan Nausner <jan.nausner@gmail.com>
--- @date 21.08.2019
+-- @date 28.08.2019
 --
 
 library ieee;
@@ -10,6 +10,7 @@ use ieee.numeric_std.all;
 use work.sync_pkg.all;
 use work.debug_pkg.all;
 
+use work.control_loop_pkg.all;
 use work.motor_pwm_pkg.all;
 
 entity flight_controller_top is
@@ -43,31 +44,6 @@ architecture structure of flight_controller_top is
     signal dc : pwm_dc(0 to PWM_CHANNELS-1)(PWM_DC_RES-1 downto 0);
     signal pwm_out : std_logic_vector(PWM_CHANNELS-1 downto 0);
 
-    component pwm is
-
-        generic
-        (
-            SYS_CLK_FREQ : natural;
-            PWM_FREQ : natural;
-            PWM_CHANNELS : natural;
-            PWM_DC_RES : natural
-        ); 
-        port
-        (
-            -- global synchronization
-            clk     : in std_logic;
-            res_n   : in std_logic;
-
-            -- PWM duty cycle
-            new_dc  : in std_logic;
-            dc      : in pwm_dc(0 to PWM_CHANNELS-1)(PWM_DC_RES-1 downto 0);
-
-            -- PWM output
-            pwm     : out std_logic_vector(PWM_CHANNELS-1 downto 0) 
-        );
-
-    end component pwm;
-
 begin
 
     -- TODO create debug mux between different modules
@@ -86,21 +62,44 @@ begin
         data_out => res_n
     );
 
-    pwm_inst : pwm
+    control_loop_inst : control_loop
     generic map
     (
-        SYS_CLK_FREQ => SYS_CLK_FREQ,
-        PWM_FREQ => PWM_FREQ,
-        PWM_CHANNELS => PWM_CHANNELS,
-        PWM_DC_RES => PWM_DC_RES 
-    )
+        GAIN_P_ROLL  : pid_gain; 
+        GAIN_I_ROLL  : pid_gain; 
+        GAIN_D_ROLL  : pid_gain; 
+        GAIN_P_PITCH : pid_gain; 
+        GAIN_I_PITCH : pid_gain; 
+        GAIN_D_PITCH : pid_gain; 
+        GAIN_P_YAW   : pid_gain; 
+        GAIN_I_YAW   : pid_gain; 
+        GAIN_D_YAW   : pid_gain; 
+        THRUST_Z     : pid_t 
+    ) 
     port map
     (
-        clk => clk,
-        res_n => res_n,
-        new_dc => new_dc,
-        dc => dc,
-        pwm => pwm_out
+        -- global synchronization
+        clk         : in std_logic;
+        res_n       : in std_logic;
+
+        -- state set values
+        new_set     : in std_logic;
+        roll_set    : in imu_angle;
+        pitch_set   : in imu_angle;
+        yaw_set     : in imu_angle;
+        
+        -- state is values
+        new_state   : in std_logic;
+        roll_is     : in imu_angle;
+        pitch_is    : in imu_angle;
+        yaw_is      : in imu_angle;
+
+        -- motor rpm values
+        new_rpm     : out std_logic;
+        m0_rpm      : out motor_rpm;
+        m1_rpm      : out motor_rpm;
+        m2_rpm      : out motor_rpm;
+        m3_rpm      : out motor_rpm
     );
   
     process(all) is

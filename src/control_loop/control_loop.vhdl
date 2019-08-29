@@ -9,6 +9,7 @@ use ieee.numeric_std.all;
 
 use work.pid_types.all;
 use work.imu_pkg.all;
+use work.motor_pwm_pkg.all;
 use work.control_loop_pkg.all;
 
 entity control_loop is
@@ -24,7 +25,7 @@ entity control_loop is
             GAIN_P_YAW   : pid_gain; 
             GAIN_I_YAW   : pid_gain; 
             GAIN_D_YAW   : pid_gain; 
-            THRUST_Z     : pid_t 
+            THRUST_Z     : motor_rpm 
         ); 
         port
         (
@@ -57,7 +58,7 @@ end entity control_loop;
 architecture structure of control_loop is
 
     signal roll_rdy, pitch_rdy, yaw_rdy, new_thrust : std_logic;
-    signal roll_pid, pitch_pid, yaw_pid : pid_t;
+    signal roll_pid, pitch_pid, yaw_pid : pid_out;
 
     component pid is
         generic
@@ -74,22 +75,22 @@ architecture structure of control_loop is
 
             -- setpoint
             new_sp      : in std_logic;
-            setpoint    : in pid_t;
+            setpoint    : in pid_in;
             
             -- current process state
             new_state   : in std_logic;
-            proc_state  : in pid_t;
+            proc_state  : in pid_in;
             
             -- control output
             pid_rdy     : out std_logic;
-            pid         : out pid_t
+            pid         : out pid_out
         );
     end component pid;
 
     component calc_motor_speed is
         generic
         (
-            THRUST_Z : pid_t 
+            THRUST_Z : motor_rpm 
         ); 
         port
         (
@@ -99,9 +100,9 @@ architecture structure of control_loop is
 
             -- angular thrust
             new_thrust  : in std_logic;
-            t_roll      : in pid_t;
-            t_pitch     : in pid_t;
-            t_yaw       : in pid_t;
+            t_roll      : in pid_out;
+            t_pitch     : in pid_out;
+            t_yaw       : in pid_out;
 
             -- motor speeds
             new_speed   : out std_logic;
