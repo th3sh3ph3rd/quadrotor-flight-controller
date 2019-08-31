@@ -1,6 +1,6 @@
 --
 -- @author Jan Nausner <jan.nausner@gmail.com>
--- @date 21.08.2019
+-- @date 28.08.2019
 --
 
 library ieee;
@@ -10,6 +10,8 @@ use ieee.numeric_std.all;
 use work.sync_pkg.all;
 use work.debug_pkg.all;
 
+use work.imu_pkg.all;
+use work.control_loop_pkg.all;
 use work.motor_pwm_pkg.all;
 
 entity flight_controller_top is
@@ -34,43 +36,21 @@ architecture structure of flight_controller_top is
     constant PWM_CHANNELS   : natural := 1;
     constant PWM_DC_RES     : natural := 16;
 
-    signal res_n, ss_n, sclk, mosi, rx : std_logic;
-
+    -- fsm state
+    type state_type is (INIT, UNARMED, ARMED);
+    signal state, state_next : state_type; 
     signal counter : natural range 0 to SYS_CLK_FREQ-1;
-    signal led_state, imu_rdy : std_logic;
+    signal arm_wait : natural range 0 to 5;
+    signal pid_step : natural range 0 to (SYS_CLK_FREQ/100)-1;
+    signal angle : natural range 0 to 90;
+    signal led_state : std_logic;
 
-    signal new_dc : std_logic;
-    signal dc : pwm_dc(0 to PWM_CHANNELS-1)(PWM_DC_RES-1 downto 0);
-    signal pwm_out : std_logic_vector(PWM_CHANNELS-1 downto 0);
-
-    component pwm is
-
-        generic
-        (
-            SYS_CLK_FREQ : natural;
-            PWM_FREQ : natural;
-            PWM_CHANNELS : natural;
-            PWM_DC_RES : natural
-        ); 
-        port
-        (
-            -- global synchronization
-            clk     : in std_logic;
-            res_n   : in std_logic;
-
-            -- PWM duty cycle
-            new_dc  : in std_logic;
-            dc      : in pwm_dc(0 to PWM_CHANNELS-1)(PWM_DC_RES-1 downto 0);
-
-            -- PWM output
-            pwm     : out std_logic_vector(PWM_CHANNELS-1 downto 0) 
-        );
-
-    end component pwm;
+    signal res_n, new_set, new_state, new_rpm_cl, new_rpm : std_logic;
+    signal roll, pitch, yaw : imu_angle;
+    signal m0_rpm_cl, m1_rpm_cl, m2_rpm_cl, m3_rpm_cl : motor_rpm;
+    signal m0_rpm, m1_rpm, m2_rpm, m3_rpm : motor_rpm;
 
 begin
-
-    -- TODO create debug mux between different modules
 
     sys_reset_sync : sync
     generic map 
@@ -86,57 +66,190 @@ begin
         data_out => res_n
     );
 
-    pwm_inst : pwm
+    control_loop_inst : control_loop
     generic map
     (
-        SYS_CLK_FREQ => SYS_CLK_FREQ,
-        PWM_FREQ => PWM_FREQ,
-        PWM_CHANNELS => PWM_CHANNELS,
-        PWM_DC_RES => PWM_DC_RES 
+        --hex notation
+        GAIN_P_ROLL  => X"0006", 
+        GAIN_I_ROLL  => X"0002",
+        GAIN_D_ROLL  => X"0002", 
+        GAIN_P_PITCH => X"0006", 
+        GAIN_I_PITCH => X"0002",
+        GAIN_D_PITCH => X"0002", 
+        GAIN_P_YAW   => X"0006", 
+        GAIN_I_YAW   => X"0002",
+        GAIN_D_YAW   => X"0002", 
+        THRUST_Z     => X"9AE2"
+    )
+    port map
+    (
+        clk => clk,         
+        res_n => res_n,       
+        new_set => new_set,
+        roll_set => X"0000",
+        pitch_set => X"0000",
+        yaw_set => X"0000",
+        new_state => new_state,
+        roll_is => roll,
+        pitch_is => pitch,
+        yaw_is => yaw,
+        new_rpm => new_rpm_cl,
+        m0_rpm => m0_rpm_cl,
+        m1_rpm => m1_rpm_cl,
+        m2_rpm => m2_rpm_cl,
+        m3_rpm => m3_rpm_cl
+    );
+  
+    m0 : motor_pwm
+    generic map
+    (
+        SYS_CLK_FREQ => SYS_CLK_FREQ
     )
     port map
     (
         clk => clk,
         res_n => res_n,
-        new_dc => new_dc,
-        dc => dc,
-        pwm => pwm_out
+        new_rpm => new_rpm,
+        rpm => m0_rpm,
+        pwm_out => pmodb(4)
     );
-  
-    process(all) is
+    
+    m1 : motor_pwm
+    generic map
+    (
+        SYS_CLK_FREQ => SYS_CLK_FREQ
+    )
+    port map
+    (
+        clk => clk,
+        res_n => res_n,
+        new_rpm => new_rpm,
+        rpm => m1_rpm,
+        pwm_out => open 
+    );
+    
+    m2 : motor_pwm
+    generic map
+    (
+        SYS_CLK_FREQ => SYS_CLK_FREQ
+    )
+    port map
+    (
+        clk => clk,
+        res_n => res_n,
+        new_rpm => new_rpm,
+        rpm => m2_rpm,
+        pwm_out => open 
+    );
+    
+    m3 : motor_pwm
+    generic map
+    (
+        SYS_CLK_FREQ => SYS_CLK_FREQ
+    )
+    port map
+    (
+        clk => clk,
+        res_n => res_n,
+        new_rpm => new_rpm,
+        rpm => m3_rpm,
+        pwm_out => open 
+    );
+
+    sync : process(all) is
     begin
         
         if res_n = '0' then
             counter <= 0;
             led_state <= '1';
-            new_dc <= '1';
-            for i in 0 to PWM_CHANNELS-1 loop
-                dc(i) <= to_unsigned(29500, PWM_DC_RES);
-            end loop;
+            state <= INIT;
+            arm_wait <= 0;
+            pid_step <= 0;
+            angle <= 0;
         elsif rising_edge(clk) then
+            state <= state_next;
             if counter = SYS_CLK_FREQ-1 then
-                led_state <= not led_state;
                 counter <= 0;
-                new_dc <= '1';
-                for i in 0 to PWM_CHANNELS-1 loop
-                    if dc(i) >= to_unsigned(49800, PWM_DC_RES) then
-                        dc(i) <= to_unsigned(29500, PWM_DC_RES);
-                    else
-                        dc(i) <= dc(i) + 812;
-                    end if;
-                end loop;
+                arm_wait <= arm_wait + 1;
             else
                 counter <= counter + 1;
-                new_dc <= '0';
+            end if;
+            if pid_step = (SYS_CLK_FREQ/100)-1 then
+                led_state <= not led_state;
+                pid_step <= 0;
+                if angle = 90 then
+                    angle <= 0;
+                else
+                    angle <= angle + 1;
+                end if;
+            else
+                pid_step <= pid_step + 1;
             end if;
         end if;
 
     end process;
 
-    leds(0) <= led_state;
-    leds(PWM_CHANNELS downto 1) <= pwm_out;
+    next_state : process(all)
+    begin
 
-    pmodb(PWM_CHANNELS-1+4 downto 4) <= pwm_out;
+        state_next <= state;
+
+        case state is
+            when INIT =>
+                state_next <= UNARMED;
+
+            when UNARMED =>
+                if arm_wait = 5 then
+                    state_next <= ARMED;
+                end if;
+
+            when ARMED =>
+
+        end case;
+
+    end process;
+
+    output : process(all)
+    begin
+
+        new_set <= '0';
+        new_state <= '0';
+        roll <= X"0000";
+        pitch <= X"0000";
+        yaw <= X"0000";
+        new_rpm <= new_rpm_cl;
+        m0_rpm <= m0_rpm_cl;
+        m1_rpm <= m1_rpm_cl;
+        m2_rpm <= m2_rpm_cl;
+        m3_rpm <= m3_rpm_cl;
+
+        --physical output
+        leds(0) <= led_state;
+        --leds(PWM_CHANNELS downto 1) <= pwm_out;
+        --pmodb(PWM_CHANNELS-1+4 downto 4) <= pwm_out;
+
+        case state is
+            when INIT =>
+                new_set <= '1';
+                new_state <= '1';
+
+            when UNARMED =>
+                new_rpm <= '1';
+                m0_rpm <= std_logic_vector(to_unsigned(MIN_RPM, MOTOR_RPM_WIDTH));
+                m1_rpm <= std_logic_vector(to_unsigned(MIN_RPM, MOTOR_RPM_WIDTH));
+                m2_rpm <= std_logic_vector(to_unsigned(MIN_RPM, MOTOR_RPM_WIDTH));
+                m3_rpm <= std_logic_vector(to_unsigned(MIN_RPM, MOTOR_RPM_WIDTH));
+
+            when ARMED =>
+                if pid_step = (SYS_CLK_FREQ/100)-1 then
+                    new_set <= '1';
+                    new_state <= '1';
+                    pitch <= std_logic_vector(to_signed(90 - angle, IMU_ANGLE_WIDTH));
+                end if;
+
+        end case;
+
+    end process;
 
 end structure;
 

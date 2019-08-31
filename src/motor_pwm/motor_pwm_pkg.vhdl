@@ -15,6 +15,9 @@ package motor_pwm_pkg is
     constant MOTOR_RPM_WIDTH : natural := 16;
     subtype motor_rpm is std_logic_vector(MOTOR_RPM_WIDTH-1 downto 0);
 
+    constant MIN_RPM : natural := 29500;
+    constant MAX_RPM : natural := 49800;
+
     type pwm_dc is array(natural range <>) of unsigned;
      
     component motor_pwm is

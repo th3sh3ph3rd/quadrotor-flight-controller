@@ -10,5 +10,5 @@ add wave /control_loop_motor_pwm_tb/UUT2/*
 add wave /control_loop_motor_pwm_tb/UUT3/*
 add wave /control_loop_motor_pwm_tb/UUT4/*
 
-run 20 us
+run 100 us
 

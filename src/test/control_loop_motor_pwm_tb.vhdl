@@ -131,11 +131,18 @@ begin
        
         new_set <= '1';
         new_state <= '1';
-        roll <= X"1440"; --90*16 => 90°
+        roll <= X"0000";
         pitch <= X"0000";
         yaw <= X"0000";
         wait for SYS_CLK_PERIOD;
         new_set <= '0';
+        new_state <= '0';
+        
+        wait until new_rpm = '1';
+        wait for SYS_CLK_PERIOD;
+        new_state <= '1';
+        roll <= X"05A0"; --90*16 => 90°
+        wait for SYS_CLK_PERIOD;
         new_state <= '0';
 
         --test roll axis
@@ -147,7 +154,48 @@ begin
             wait for SYS_CLK_PERIOD;
             new_state <= '0';
         end loop;
+        
+        wait until new_rpm = '1';
+        wait for SYS_CLK_PERIOD;
+        new_state <= '1';
+        roll <= X"05A0"; --90*16 => 90°
+        pitch <= X"FA60"; --90*16 => -90°
+        yaw <= X"0000";
+        wait for SYS_CLK_PERIOD;
+        new_state <= '0';
 
+        --test roll and pitch axis
+        for i in 0 to 90*16/20 loop --take fixed point shift of 4 bits into consideration
+            wait until new_rpm = '1';
+            wait for SYS_CLK_PERIOD;
+            new_state <= '1';
+            roll <= std_logic_vector(to_signed(1440, IMU_ANGLE_WIDTH) - to_signed(20*i, IMU_ANGLE_WIDTH));
+            pitch <= std_logic_vector(to_signed(-1440, IMU_ANGLE_WIDTH) + to_signed(20*i, IMU_ANGLE_WIDTH));
+            wait for SYS_CLK_PERIOD;
+            new_state <= '0';
+        end loop;
+
+        wait until new_rpm = '1';
+        wait for SYS_CLK_PERIOD;
+        new_state <= '1';
+        roll <= X"05A0"; --90*16 => 90°
+        pitch <= X"FA60"; --90*16 => -90°
+        yaw <= X"05A0"; --90*16 => 90°
+        wait for SYS_CLK_PERIOD;
+        new_state <= '0';
+
+        --test roll, pitch and yaw axis
+        for i in 0 to 90*16/20 loop --take fixed point shift of 4 bits into consideration
+            wait until new_rpm = '1';
+            wait for SYS_CLK_PERIOD;
+            new_state <= '1';
+            roll <= std_logic_vector(to_signed(1440, IMU_ANGLE_WIDTH) - to_signed(20*i, IMU_ANGLE_WIDTH));
+            pitch <= std_logic_vector(to_signed(-1440, IMU_ANGLE_WIDTH) + to_signed(20*i, IMU_ANGLE_WIDTH));
+            yaw <= std_logic_vector(to_signed(1440, IMU_ANGLE_WIDTH) - to_signed(20*i, IMU_ANGLE_WIDTH));
+            wait for SYS_CLK_PERIOD;
+            new_state <= '0';
+        end loop;
+        
         wait;
     end process stimulus;
 
