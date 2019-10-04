@@ -79,8 +79,9 @@ begin
         if cnt = PWM_CLKS-1 then
             cnt_next <= 0;
             for i in 0 to PWM_CHANNELS-1 loop --calculate next pwm transition
-                mul_tmp(i) <= dc_buf(i)*to_unsigned(PWM_CLKS, MAX_MUL_BITS-PWM_DC_RES); --account for overflow
-                dc_mid_next(i) <= to_integer(mul_tmp(i)/(2**PWM_DC_RES));
+--                mul_tmp(i) <= dc_buf(i)*to_unsigned(PWM_CLKS, MAX_MUL_BITS-PWM_DC_RES); --account for overflow
+--                dc_mid_next(i) <= to_integer(mul_tmp(i)/(2**PWM_DC_RES));
+                dc_mid_next(i) <= to_integer((dc_buf(i)*to_unsigned(PWM_CLKS, MAX_MUL_BITS-PWM_DC_RES))/(2**PWM_DC_RES));
             end loop;
         else
             cnt_next <= cnt + 1;

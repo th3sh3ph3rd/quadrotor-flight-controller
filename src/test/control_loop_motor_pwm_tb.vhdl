@@ -13,6 +13,8 @@ architecture tb of control_loop_motor_pwm_tb is
 
     constant SYS_CLK_FREQ   : integer := 50000000;
     constant SYS_CLK_PERIOD : time := 20 ns;
+    constant PWM_FREQ       : natural := 400;
+    constant PWM_PERIOD     : time := 2500 us; 
 
     signal clk, res_n : std_logic;
 
@@ -26,15 +28,15 @@ begin
     generic map
     (
         --hex notation
-        GAIN_P_ROLL  => X"0006", 
-        GAIN_I_ROLL  => X"0002",
-        GAIN_D_ROLL  => X"0002", 
-        GAIN_P_PITCH => X"0006", 
-        GAIN_I_PITCH => X"0002",
-        GAIN_D_PITCH => X"0002", 
-        GAIN_P_YAW   => X"0006", 
-        GAIN_I_YAW   => X"0002",
-        GAIN_D_YAW   => X"0002", 
+        GAIN_P_ROLL  => X"0106", 
+        GAIN_I_ROLL  => X"0102",
+        GAIN_D_ROLL  => X"0102", 
+        GAIN_P_PITCH => X"0106", 
+        GAIN_I_PITCH => X"0102",
+        GAIN_D_PITCH => X"0102", 
+        GAIN_P_YAW   => X"0106", 
+        GAIN_I_YAW   => X"0102",
+        GAIN_D_YAW   => X"0102", 
         THRUST_Z     => X"9AE2"
     )
     port map
@@ -144,56 +146,52 @@ begin
         roll <= X"05A0"; --90*16 => 90°
         wait for SYS_CLK_PERIOD;
         new_state <= '0';
+        wait for 4*PWM_PERIOD;
 
         --test roll axis
         for i in 0 to 90*16/20 loop --take fixed point shift of 4 bits into consideration
-            wait until new_rpm = '1';
-            wait for SYS_CLK_PERIOD;
             new_state <= '1';
             roll <= std_logic_vector(to_signed(1440, IMU_ANGLE_WIDTH) - to_signed(20*i, IMU_ANGLE_WIDTH));
             wait for SYS_CLK_PERIOD;
             new_state <= '0';
+            wait for 4*PWM_PERIOD;
         end loop;
         
-        wait until new_rpm = '1';
-        wait for SYS_CLK_PERIOD;
         new_state <= '1';
         roll <= X"05A0"; --90*16 => 90°
         pitch <= X"FA60"; --90*16 => -90°
         yaw <= X"0000";
         wait for SYS_CLK_PERIOD;
         new_state <= '0';
+        wait for 4*PWM_PERIOD;
 
         --test roll and pitch axis
         for i in 0 to 90*16/20 loop --take fixed point shift of 4 bits into consideration
-            wait until new_rpm = '1';
-            wait for SYS_CLK_PERIOD;
             new_state <= '1';
             roll <= std_logic_vector(to_signed(1440, IMU_ANGLE_WIDTH) - to_signed(20*i, IMU_ANGLE_WIDTH));
             pitch <= std_logic_vector(to_signed(-1440, IMU_ANGLE_WIDTH) + to_signed(20*i, IMU_ANGLE_WIDTH));
             wait for SYS_CLK_PERIOD;
             new_state <= '0';
+            wait for 4*PWM_PERIOD;
         end loop;
 
-        wait until new_rpm = '1';
-        wait for SYS_CLK_PERIOD;
         new_state <= '1';
         roll <= X"05A0"; --90*16 => 90°
         pitch <= X"FA60"; --90*16 => -90°
         yaw <= X"05A0"; --90*16 => 90°
         wait for SYS_CLK_PERIOD;
         new_state <= '0';
+        wait for 4*PWM_PERIOD;
 
         --test roll, pitch and yaw axis
         for i in 0 to 90*16/20 loop --take fixed point shift of 4 bits into consideration
-            wait until new_rpm = '1';
-            wait for SYS_CLK_PERIOD;
             new_state <= '1';
             roll <= std_logic_vector(to_signed(1440, IMU_ANGLE_WIDTH) - to_signed(20*i, IMU_ANGLE_WIDTH));
             pitch <= std_logic_vector(to_signed(-1440, IMU_ANGLE_WIDTH) + to_signed(20*i, IMU_ANGLE_WIDTH));
             yaw <= std_logic_vector(to_signed(1440, IMU_ANGLE_WIDTH) - to_signed(20*i, IMU_ANGLE_WIDTH));
             wait for SYS_CLK_PERIOD;
             new_state <= '0';
+            wait for 4*PWM_PERIOD;
         end loop;
         
         wait;

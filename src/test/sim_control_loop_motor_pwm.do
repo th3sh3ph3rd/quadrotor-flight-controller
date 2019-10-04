@@ -6,9 +6,10 @@ vsim -t ps work.control_loop_motor_pwm_tb
 
 add wave /control_loop_motor_pwm_tb/UUT0/*
 add wave /control_loop_motor_pwm_tb/UUT1/*
+add wave /control_loop_motor_pwm_tb/UUT1/pwm_inst/*
 add wave /control_loop_motor_pwm_tb/UUT2/*
 add wave /control_loop_motor_pwm_tb/UUT3/*
 add wave /control_loop_motor_pwm_tb/UUT4/*
 
-run 100 us
+run 700 ms
 

@@ -86,13 +86,29 @@ begin
 --            speed_next.m1 <= THRUST_Z - ("0000" & t_roll(15 downto 4)) - ("0000" & t_pitch(15 downto 4)) - ("0000" & t_yaw(15 downto 4));
 --            speed_next.m2 <= THRUST_Z + ("0000" & t_roll(15 downto 4)) - ("0000" & t_pitch(15 downto 4)) + ("0000" & t_yaw(15 downto 4));
 --            speed_next.m3 <= THRUST_Z + ("0000" & t_roll(15 downto 4)) + ("0000" & t_pitch(15 downto 4)) - ("0000" & t_yaw(15 downto 4));
-            t_roll_s <= unsigned(t_roll((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT));
-            t_pitch_s <= unsigned(t_pitch((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT));
-            t_yaw_s <= unsigned(t_yaw((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT));
-            speed_next.m0 <= std_logic_vector(unsigned(THRUST_Z) - t_roll_s + t_pitch_s + t_yaw_s);
-            speed_next.m1 <= std_logic_vector(unsigned(THRUST_Z) - t_roll_s - t_pitch_s - t_yaw_s);
-            speed_next.m2 <= std_logic_vector(unsigned(THRUST_Z) + t_roll_s - t_pitch_s + t_yaw_s);
-            speed_next.m3 <= std_logic_vector(unsigned(THRUST_Z) + t_roll_s + t_pitch_s - t_yaw_s);
+            speed_next.m0 <= std_logic_vector(unsigned(THRUST_Z)
+                             - unsigned(t_roll((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT))
+                             + unsigned(t_pitch((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT))
+                             + unsigned(t_yaw((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT)));
+            speed_next.m1 <= std_logic_vector(unsigned(THRUST_Z)
+                             - unsigned(t_roll((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT))
+                             - unsigned(t_pitch((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT))
+                             - unsigned(t_yaw((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT)));
+            speed_next.m2 <= std_logic_vector(unsigned(THRUST_Z)
+                             + unsigned(t_roll((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT))
+                             - unsigned(t_pitch((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT))
+                             + unsigned(t_yaw((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT)));
+            speed_next.m3 <= std_logic_vector(unsigned(THRUST_Z)
+                             + unsigned(t_roll((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT))
+                             + unsigned(t_pitch((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT))
+                             - unsigned(t_yaw((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT)));
+--            t_roll_s <= unsigned(t_roll((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT));
+--            t_pitch_s <= unsigned(t_pitch((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT));
+--            t_yaw_s <= unsigned(t_yaw((MOTOR_RPM_WIDTH+FIXED_POINT_SHIFT-1) downto FIXED_POINT_SHIFT));
+--            speed_next.m0 <= std_logic_vector(unsigned(THRUST_Z) - t_roll_s + t_pitch_s + t_yaw_s);
+--            speed_next.m1 <= std_logic_vector(unsigned(THRUST_Z) - t_roll_s - t_pitch_s - t_yaw_s);
+--            speed_next.m2 <= std_logic_vector(unsigned(THRUST_Z) + t_roll_s - t_pitch_s + t_yaw_s);
+--            speed_next.m3 <= std_logic_vector(unsigned(THRUST_Z) + t_roll_s + t_pitch_s - t_yaw_s);
         end if;
     end process output;
 

@@ -43,7 +43,7 @@ architecture structure of flight_controller_top is
     signal arm_wait : natural range 0 to 5;
     signal pid_step : natural range 0 to (SYS_CLK_FREQ/100)-1;
     signal angle : natural range 0 to 90;
-    signal led_state : std_logic;
+    signal led0_state, led1_state : std_logic;
 
     signal res_n, new_set, new_state, new_rpm_cl, new_rpm : std_logic;
     signal roll, pitch, yaw : imu_angle;
@@ -70,15 +70,15 @@ begin
     generic map
     (
         --hex notation
-        GAIN_P_ROLL  => X"0006", 
-        GAIN_I_ROLL  => X"0002",
-        GAIN_D_ROLL  => X"0002", 
-        GAIN_P_PITCH => X"0006", 
-        GAIN_I_PITCH => X"0002",
-        GAIN_D_PITCH => X"0002", 
-        GAIN_P_YAW   => X"0006", 
-        GAIN_I_YAW   => X"0002",
-        GAIN_D_YAW   => X"0002", 
+        GAIN_P_ROLL  => X"1000", 
+        GAIN_I_ROLL  => X"1000",
+        GAIN_D_ROLL  => X"1000", 
+        GAIN_P_PITCH => X"1000", 
+        GAIN_I_PITCH => X"1000",
+        GAIN_D_PITCH => X"1000", 
+        GAIN_P_YAW   => X"1000", 
+        GAIN_I_YAW   => X"1000",
+        GAIN_D_YAW   => X"1000", 
         THRUST_Z     => X"9AE2"
     )
     port map
@@ -125,7 +125,7 @@ begin
         res_n => res_n,
         new_rpm => new_rpm,
         rpm => m1_rpm,
-        pwm_out => open 
+        pwm_out => pmodb(5) 
     );
     
     m2 : motor_pwm
@@ -139,7 +139,7 @@ begin
         res_n => res_n,
         new_rpm => new_rpm,
         rpm => m2_rpm,
-        pwm_out => open 
+        pwm_out => pmodb(6)
     );
     
     m3 : motor_pwm
@@ -153,7 +153,7 @@ begin
         res_n => res_n,
         new_rpm => new_rpm,
         rpm => m3_rpm,
-        pwm_out => open 
+        pwm_out => pmodb(7)
     );
 
     sync : process(all) is
@@ -161,7 +161,8 @@ begin
         
         if res_n = '0' then
             counter <= 0;
-            led_state <= '1';
+            led0_state <= '1';
+            led1_state <= '1';
             state <= INIT;
             arm_wait <= 0;
             pid_step <= 0;
@@ -169,7 +170,7 @@ begin
         elsif rising_edge(clk) then
             state <= state_next;
             if counter = SYS_CLK_FREQ-1 then
-                led_state <= not led_state;
+                led0_state <= not led0_state;
                 counter <= 0;
                 arm_wait <= arm_wait + 1;
             else
@@ -178,6 +179,7 @@ begin
             if pid_step = (SYS_CLK_FREQ/100)-1 then
                 pid_step <= 0;
                 if angle = 90 then
+                    led1_state <= not led1_state;
                     angle <= 0;
                 else
                     angle <= angle + 1;
@@ -224,7 +226,8 @@ begin
         m3_rpm <= m3_rpm_cl;
 
         --physical output
-        leds(0) <= led_state;
+        leds(0) <= led0_state;
+        leds(1) <= led1_state;
         --leds(PWM_CHANNELS downto 1) <= pwm_out;
         --pmodb(PWM_CHANNELS-1+4 downto 4) <= pwm_out;
 
