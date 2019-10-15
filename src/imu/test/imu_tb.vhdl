@@ -54,13 +54,13 @@ begin
         spi_begin(ss_n, SPI_CLK_FREQ);
 
         -- roll
-        spi_transmit16(sclk, mosi, X"69a5", SPI_CLK_FREQ);
+        spi_transmit16(sclk, mosi, X"09a5", SPI_CLK_FREQ);
 
         -- pitch
-        spi_transmit16(sclk, mosi, X"5a69", SPI_CLK_FREQ);
+        spi_transmit16(sclk, mosi, X"0a69", SPI_CLK_FREQ);
         
         -- yaw
-        spi_transmit16(sclk, mosi, X"965a", SPI_CLK_FREQ);
+        spi_transmit16(sclk, mosi, X"065a", SPI_CLK_FREQ);
 
         spi_end(ss_n, sclk, SPI_CLK_FREQ);
 

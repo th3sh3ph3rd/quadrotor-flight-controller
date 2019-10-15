@@ -10,6 +10,7 @@ use ieee.numeric_std.all;
 use work.sync_pkg.all;
 use work.debug_pkg.all;
 
+use work.fp_pkg.all;
 use work.imu_pkg.all;
 use work.control_loop_pkg.all;
 use work.motor_pwm_pkg.all;
@@ -46,7 +47,7 @@ architecture structure of flight_controller_top is
     signal led0_state, led1_state : std_logic;
 
     signal res_n, ss_n, sclk, mosi, new_set, new_state, new_rpm_cl, new_rpm, imu_rdy : std_logic;
-    signal roll, pitch, yaw : imu_angle;
+    signal roll, pitch, yaw : FP_T;
     signal m0_rpm_cl, m1_rpm_cl, m2_rpm_cl, m3_rpm_cl : motor_rpm;
     signal m0_rpm, m1_rpm, m2_rpm, m3_rpm : motor_rpm;
 
@@ -137,15 +138,15 @@ begin
 --        GAIN_I_YAW   => X"1000",
 --        GAIN_D_YAW   => X"1000", 
 --        THRUST_Z     => X"9AE2"
-        GAIN_P_ROLL  => X"0000", 
-        GAIN_I_ROLL  => X"0000",
-        GAIN_D_ROLL  => X"0000", 
-        GAIN_P_PITCH => X"0000", 
-        GAIN_I_PITCH => X"0000",
-        GAIN_D_PITCH => X"0000", 
-        GAIN_P_YAW   => X"0000", 
-        GAIN_I_YAW   => X"0000",
-        GAIN_D_YAW   => X"0000", 
+        GAIN_P_ROLL => '0' & X"0027",
+        GAIN_I_ROLL => '0' & X"003f",
+        GAIN_D_ROLL => '1' & X"1153",
+        GAIN_P_PITCH => '0' & X"0027",
+        GAIN_I_PITCH => '0' & X"003f",
+        GAIN_D_PITCH => '1' & X"1153",
+        GAIN_P_YAW => '0' & X"0027",
+        GAIN_I_YAW => '0' & X"003f",
+        GAIN_D_YAW => '1' & X"1153",
         THRUST_Z     => X"9AE2"
     )
     port map
@@ -153,9 +154,9 @@ begin
         clk => clk,         
         res_n => res_n,       
         new_set => new_set,
-        roll_set => X"0000",
-        pitch_set => X"0000",
-        yaw_set => X"0000",
+        roll_set => int2fp(0),
+        pitch_set => int2fp(0),
+        yaw_set => int2fp(0),
         new_state => new_state,
         roll_is => roll,
         pitch_is => pitch,

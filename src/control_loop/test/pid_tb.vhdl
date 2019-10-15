@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.pid_types.all;
+use work.fp_pkg.all;
 
 entity pid_tb is
 end entity pid_tb;
@@ -15,14 +15,14 @@ architecture tb of pid_tb is
     signal clk, res_n : std_logic;
 
     signal new_sp, new_state, pid_rdy : std_logic;
-    signal setpoint, proc_state : pid_t;
+    signal setpoint, proc_state : FP_T;
 
     component pid is
         generic
         (
-            GAIN_P : pid_gain; 
-            GAIN_I : pid_gain; 
-            GAIN_D : pid_gain 
+            GAIN_P : FP_T; 
+            GAIN_I : FP_T; 
+            GAIN_D : FP_T 
         ); 
         port
         (
@@ -32,15 +32,15 @@ architecture tb of pid_tb is
 
             -- setpoint
             new_sp      : in std_logic;
-            setpoint    : in pid_t;
+            setpoint    : in FP_T;
             
-            -- current state
+            -- current process state
             new_state   : in std_logic;
-            proc_state  : in pid_t;
+            adc         : in FP_T;
             
             -- control output
             pid_rdy     : out std_logic;
-            pid         : out pid_t
+            dac         : out FP_T
         );
     end component pid;
 
@@ -49,9 +49,12 @@ begin
     UUT : pid
     generic map
     (
-        GAIN_P => X"0006",
-        GAIN_I => X"0002",
-        GAIN_D => X"0002"
+--        GAIN_P => int2fp(2),
+--        GAIN_I => int2fp(3),
+--        GAIN_D => int2fp(-5)
+        GAIN_P => '0' & X"0027",
+        GAIN_I => '0' & X"003f",
+        GAIN_D => '1' & X"1153"
     )
     port map
     (
@@ -60,9 +63,9 @@ begin
        new_sp => new_sp,
        setpoint => setpoint,
        new_state => new_state,
-       proc_state => proc_state,
+       adc => proc_state,
        pid_rdy => pid_rdy,
-       pid => open
+       dac => open
     );
 
     clk_gen : process
@@ -85,19 +88,26 @@ begin
         wait for SYS_CLK_PERIOD;
 
         new_sp <= '1';
-        setpoint <= to_signed(180*16, 16);
+        setpoint <= int2fp(0);
         wait for SYS_CLK_PERIOD;
         new_sp <= '0';
 
         new_state <= '1';
-        proc_state <= to_signed(0, 16);
+        proc_state <= int2fp(0);
         wait for SYS_CLK_PERIOD;
         new_state <= '0';
         wait until pid_rdy = '1';
         wait for SYS_CLK_PERIOD;
 
         new_state <= '1';
-        proc_state <= to_signed(-180*16, 16);
+        proc_state <= int2fp(-180);
+        wait for SYS_CLK_PERIOD;
+        new_state <= '0';
+        wait until pid_rdy = '1';
+        wait for SYS_CLK_PERIOD;
+        
+        new_state <= '1';
+        proc_state <= int2fp(180);
         wait for SYS_CLK_PERIOD;
         new_state <= '0';
         wait until pid_rdy = '1';

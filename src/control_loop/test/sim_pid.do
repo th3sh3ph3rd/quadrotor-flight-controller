@@ -1,4 +1,4 @@
-vcom -work work -2008 ../pid_types.vhdl
+vcom -work work -2008 ../fp_pkg.vhdl
 vcom -work work -2008 pid_tb.vhdl
 
 vsim -t ps work.pid_tb

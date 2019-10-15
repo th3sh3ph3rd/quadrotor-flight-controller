@@ -1,3 +1,4 @@
+vcom -work work -2008 ../../control_loop/fp_pkg.vhdl
 vcom -work work -2008 ../imu_pkg.vhdl
 vcom -work work -2008 spi_bfm_pkg.vhdl
 vcom -work work -2008 imu_tb.vhdl

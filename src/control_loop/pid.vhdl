@@ -7,16 +7,16 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-use work.pid_types.all;
+use work.fp_pkg.all;
 
 entity pid is
 
         -- TODO add integral saturation
         generic
         (
-            GAIN_P : pid_gain; 
-            GAIN_I : pid_gain; 
-            GAIN_D : pid_gain 
+            GAIN_P : FP_T; 
+            GAIN_I : FP_T; 
+            GAIN_D : FP_T 
         ); 
         port
         (
@@ -26,15 +26,15 @@ entity pid is
 
             -- setpoint
             new_sp      : in std_logic;
-            setpoint    : in pid_in;
+            setpoint    : in FP_T;
             
             -- current process state
             new_state   : in std_logic;
-            proc_state  : in pid_in;
+            adc         : in FP_T;
             
             -- control output
             pid_rdy     : out std_logic;
-            pid         : out pid_out
+            dac         : out FP_T
         );
 
 end entity pid;
@@ -42,102 +42,97 @@ end entity pid;
 architecture behavior of pid is
 
     -- fsm state
-    type state_type is (IDLE, CALC_TERMS, ADD_TERMS, DONE);
-    signal state, state_next : state_type;
- 
-    signal sp, sp_next              : pid_in;
-    signal err, err_next            : pid_in;
-    signal err_prev, err_prev_next  : pid_in;
+    type STATE_T is (IDLE, CALC_ERR, CALC_TERMS, ADD_TERMS, DONE);
 
-    type pid_terms is record
-        p   : pid_out;
-        i   : pid_out;
-        d   : pid_out;
-        pid : pid_out;    
+    type REGISTER_T is record
+        state       : STATE_T;
+        sp          : FP_T;
+        adc         : FP_T;
+        err         : FP_T;
+        err_acc     : FP_T;
+        err_prev    : FP_T;
+        p           : FP_MULRES_T;
+        i           : FP_MULRES_T;
+        d           : FP_MULRES_T;
+        dac         : FP_T;
     end record;
-    signal terms, terms_next : pid_terms;
+    signal R, R_next : REGISTER_T;
+
+    constant R_reset : REGISTER_T :=
+    (
+        state       => IDLE,
+        sp          => (others => '0'),
+        adc         => (others => '0'),
+        err         => (others => '0'),
+        err_acc     => (others => '0'),
+        err_prev    => (others => '0'),
+        p           => (others => '0'),
+        i           => (others => '0'),
+        d           => (others => '0'),
+        dac         => (others => '0') 
+    );
 
 begin
     
     sync : process(all)
     begin
         if res_n = '0' then
-            state     <= IDLE;
-            sp        <= (others => '0');
-            err       <= (others => '0');
-            err_prev  <= (others => '0');
-            terms.p   <= (others => '0');
-            terms.i   <= (others => '0');
-            terms.d   <= (others => '0');
-            terms.pid <= (others => '0');
+            R <= R_reset;
         elsif rising_edge(clk) then
-            state    <= state_next;
-            sp       <= sp_next;
-            err      <= err_next;
-            err_prev <= err_prev_next;
-            terms    <= terms_next;
+            R <= R_next;
         end if;
     end process sync;
-    
-    next_state : process(all)
+     
+    async : process(all)
+
+        variable S : REGISTER_T;
+
     begin
-        state_next <= state;
 
-        case state is
-            when IDLE =>
-                if new_state = '1' then
-                    state_next <= CALC_TERMS;
-                end if;
-
-            when CALC_TERMS =>
-                state_next <= ADD_TERMS;
-
-            when ADD_TERMS =>
-                state_next <= DONE;
-
-            when DONE =>
-                state_next <= IDLE;
-
-        end case;
-    end process next_state;
-    
-    output : process(all)
-    begin
+        --output
         pid_rdy <= '0';
-        pid     <= (others => '0');
+        dac     <= R.dac;
 
-        -- TODO should this also trigger a control loop action?
+        S := R;
+
         if new_sp = '1' then
-            sp_next <= setpoint;
-        else
-            sp_next <= sp;
+            S.sp := setpoint;
         end if;
 
-        err_next      <= err;
-        err_prev_next <= err_prev;
-        terms_next    <= terms;
-
-        case state is
+        case R.state is
             when IDLE =>
                 if new_state = '1' then
-                    err_next <= sp - proc_state;
-                    err_prev_next <= err;
+                    S.adc   := adc;
+                    S.state := CALC_ERR;
                 end if;
 
-            when CALC_TERMS =>
-                terms_next.p <= GAIN_P * err / 2**FIXED_POINT_SHIFT; --remove double shift from multiplication
-                terms_next.i <= GAIN_I * err / 2**FIXED_POINT_SHIFT;
-                terms_next.d <= GAIN_D * (err - err_prev) / 2**FIXED_POINT_SHIFT;
+            when CALC_ERR =>
+                S.err       := R.sp - R.adc;
+                S.err_acc   := R.err_acc + R.sp - R.adc; 
+                S.err_prev  := R.err;
+                S.state     := CALC_TERMS;
 
-            when ADD_TERMS =>
-                terms_next.pid <= terms.p + terms.i + terms.d;
+            when CALC_TERMS =>
+                S.p     := GAIN_P * R.err;
+                S.i     := GAIN_I * R.err_acc; --TODO multiply by dt
+                S.d     := GAIN_D * (R.err - R.err_prev); --TODO divide by dt
+                S.state := ADD_TERMS;
+
+            when ADD_TERMS => --extract fixed point value from multiplication result and add values
+                S.dac   := fp_mulres2fp(R.p) + 
+                           fp_mulres2fp(R.i) + 
+                           fp_mulres2fp(R.d);
+                S.state := DONE;
 
             when DONE =>
                 pid_rdy <= '1';
-                pid     <= terms.pid;
+                S.state := IDLE;
 
         end case;
-    end process output;
+        
+        R_next  <= S;
+
+    end process async;
 
 end architecture behavior;
 

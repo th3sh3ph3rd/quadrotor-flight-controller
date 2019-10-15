@@ -7,10 +7,9 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-package imu_pkg is
+use work.fp_pkg.all;
 
-    constant IMU_ANGLE_WIDTH : natural := 16;
-    subtype imu_angle is std_logic_vector(IMU_ANGLE_WIDTH-1 downto 0); 
+package imu_pkg is
 
     component imu is
 
@@ -22,9 +21,9 @@ package imu_pkg is
 
             -- output angles
             imu_rdy : out std_logic;
-            roll    : out imu_angle;
-            pitch   : out imu_angle;
-            yaw     : out imu_angle;
+            roll    : out FP_T;
+            pitch   : out FP_T;
+            yaw     : out FP_T;
 
             -- SPI
             ss_n    : in std_logic;

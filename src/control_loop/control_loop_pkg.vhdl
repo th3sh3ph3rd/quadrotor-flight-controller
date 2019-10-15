@@ -7,8 +7,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
---TODO maybe use only the subtype
-use work.pid_types.all;
+use work.fp_pkg.all;
 use work.imu_pkg.all;
 use work.motor_pwm_pkg.all;
 
@@ -18,15 +17,15 @@ package control_loop_pkg is
 
         generic
         (
-            GAIN_P_ROLL  : pid_gain; 
-            GAIN_I_ROLL  : pid_gain; 
-            GAIN_D_ROLL  : pid_gain; 
-            GAIN_P_PITCH : pid_gain; 
-            GAIN_I_PITCH : pid_gain; 
-            GAIN_D_PITCH : pid_gain; 
-            GAIN_P_YAW   : pid_gain; 
-            GAIN_I_YAW   : pid_gain; 
-            GAIN_D_YAW   : pid_gain; 
+            GAIN_P_ROLL  : FP_T; 
+            GAIN_I_ROLL  : FP_T; 
+            GAIN_D_ROLL  : FP_T; 
+            GAIN_P_PITCH : FP_T; 
+            GAIN_I_PITCH : FP_T; 
+            GAIN_D_PITCH : FP_T; 
+            GAIN_P_YAW   : FP_T; 
+            GAIN_I_YAW   : FP_T; 
+            GAIN_D_YAW   : FP_T; 
             THRUST_Z     : motor_rpm 
         ); 
         port
@@ -37,15 +36,15 @@ package control_loop_pkg is
 
             -- state set values
             new_set     : in std_logic;
-            roll_set    : in imu_angle;
-            pitch_set   : in imu_angle;
-            yaw_set     : in imu_angle;
+            roll_set    : in FP_T;
+            pitch_set   : in FP_T;
+            yaw_set     : in FP_T;
             
             -- state is values
             new_state   : in std_logic;
-            roll_is     : in imu_angle;
-            pitch_is    : in imu_angle;
-            yaw_is      : in imu_angle;
+            roll_is     : in FP_T;
+            pitch_is    : in FP_T;
+            yaw_is      : in FP_T;
 
             -- motor rpm values
             new_rpm     : out std_logic;

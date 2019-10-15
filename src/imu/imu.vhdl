@@ -7,6 +7,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
+use work.fp_pkg.all;
 use work.imu_pkg.all;
 
 entity imu is
@@ -19,9 +20,9 @@ entity imu is
 
             -- output angles
             imu_rdy : out std_logic;
-            roll    : out imu_angle;
-            pitch   : out imu_angle;
-            yaw     : out imu_angle; 
+            roll    : out FP_T;
+            pitch   : out FP_T;
+            yaw     : out FP_T; 
             
             -- SPI
             ss_n    : in std_logic;
@@ -33,7 +34,10 @@ entity imu is
 end entity imu;
 
 architecture behavior of imu is
-    
+  
+    constant ADC_WIDTH  : natural := 12;
+    constant SPI_BITS   : natural := 16;
+
     -- fsm state
     type STATE_T is (IDLE, RECV_ROLL, RECV_PITCH, RECV_YAW, DONE, WAIT_SS);
 
@@ -42,10 +46,11 @@ architecture behavior of imu is
         sclk_meta   : std_logic;
         sclk        : std_logic;
         sclk_prev   : std_logic;
-        bit_cnt     : natural range 0 to IMU_ANGLE_WIDTH-1;
-        roll        : imu_angle;
-        pitch       : imu_angle;
-        yaw         : imu_angle;
+        bit_cnt     : natural range 0 to SPI_BITS-1;
+        buf         : signed(SPI_BITS-1 downto 0);
+        roll        : FP_T;
+        pitch       : FP_T;
+        yaw         : FP_T;
     end record;
     signal R, R_next : REGISTER_T;
 
@@ -56,6 +61,7 @@ architecture behavior of imu is
         sclk        => '0',
         sclk_prev   => '0',
         bit_cnt     => 0,
+        buf         => (others => '0'),
         roll        => (others => '0'),
         pitch       => (others => '0'),
         yaw         => (others => '0')
@@ -88,6 +94,7 @@ begin
         S := R;
 
         --synchronizer chain
+
         S.sclk_meta := sclk;
         S.sclk      := R.sclk_meta;
         S.sclk_prev := R.sclk;
@@ -102,42 +109,39 @@ begin
             when RECV_ROLL =>
                 miso <= '0';
                 if R.sclk_prev = '0' and R.sclk = '1' then --detect rising edge
-                    S.roll := R.roll(IMU_ANGLE_WIDTH-2 downto 0) & mosi;
-                    if R.bit_cnt = IMU_ANGLE_WIDTH-1 then
-                        S.bit_cnt := 0;
+                    S.buf := R.buf(SPI_BITS-2 downto 0) & mosi;
+                    if R.bit_cnt = SPI_BITS-1 then
+                        S.bit_cnt   := 0;
+                        S.roll      := shift_left(resize(S.buf(ADC_WIDTH-1 downto 0), FP_WIDTH), FP_FRAC_BITS); --sign-extend the ADC value and convert to fixe-point type
+                        S.state     := RECV_PITCH;
                     else
                         S.bit_cnt := R.bit_cnt + 1;
-                    end if;
-                    if R.bit_cnt = IMU_ANGLE_WIDTH-1 then
-                        S.state := RECV_PITCH;
                     end if;
                 end if;
 
             when RECV_PITCH =>
                 miso <= '0';
                 if R.sclk_prev = '0' and R.sclk = '1' then --detect rising edge
-                    S.pitch := R.pitch(IMU_ANGLE_WIDTH-2 downto 0) & mosi;
-                    if R.bit_cnt = IMU_ANGLE_WIDTH-1 then
-                        S.bit_cnt := 0;
+                    S.buf := R.buf(SPI_BITS-2 downto 0) & mosi;
+                    if R.bit_cnt = SPI_BITS-1 then
+                        S.bit_cnt   := 0;
+                        S.pitch     := shift_left(resize(S.buf(ADC_WIDTH-1 downto 0), FP_WIDTH), FP_FRAC_BITS); --sign-extend the ADC value and convert to fixe-point type
+                        S.state     := RECV_YAW;
                     else
                         S.bit_cnt := R.bit_cnt + 1;
-                    end if;
-                    if R.bit_cnt = IMU_ANGLE_WIDTH-1 then
-                        S.state := RECV_YAW;
                     end if;
                 end if;
 
             when RECV_YAW =>
                 miso <= '0';
                 if R.sclk_prev = '0' and R.sclk = '1' then --detect rising edge
-                    S.yaw := R.yaw(IMU_ANGLE_WIDTH-2 downto 0) & mosi;
-                    if R.bit_cnt = IMU_ANGLE_WIDTH-1 then
-                        S.bit_cnt := 0;
+                    S.buf := R.buf(SPI_BITS-2 downto 0) & mosi;
+                    if R.bit_cnt = SPI_BITS-1 then
+                        S.bit_cnt   := 0;
+                        S.yaw       := shift_left(resize(S.buf(ADC_WIDTH-1 downto 0), FP_WIDTH), FP_FRAC_BITS); --sign-extend the ADC value and convert to fixe-point type
+                        S.state     := DONE;
                     else
                         S.bit_cnt := R.bit_cnt + 1;
-                    end if;
-                    if R.bit_cnt = IMU_ANGLE_WIDTH-1 then
-                        S.state := DONE;
                     end if;
                 end if;
 
