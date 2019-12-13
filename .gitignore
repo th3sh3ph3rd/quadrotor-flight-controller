@@ -1,3 +1,9 @@
 *.swp
 *.bak
+*.stp
+*.qws
+quartus/db/
+quartus/incremental_db/
+quartus/output_files/
+quartus/simulation/
 
