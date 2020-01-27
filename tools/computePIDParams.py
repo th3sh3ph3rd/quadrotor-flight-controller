@@ -4,25 +4,33 @@ import sys
 
 FP_FRAC_BITS = 4
 
-OF       = "pid_params.vhdl"
+OF       = "../src/control_loop/pid_params.vhdl"
 
 Ts       = 0.01 
-Kc_roll  = -1.5
-Ti_roll  = 1.5
+Kc_roll  = 40
+Ti_roll  = 5
 Td_roll  = 1.5
-Kc_pitch = 1.5
-Ti_pitch = -1.5
+Kc_pitch = 40
+Ti_pitch = 5
 Td_pitch = 1.5
-Kc_yaw   = 2.3
+Kc_yaw   = 100
 Ti_yaw   = 2.3
 Td_yaw   = -2.3
+
+#Kc_roll  = 0
+Td_roll  = 0
+#Kc_pitch = 0
+Td_pitch = 0
+Kc_yaw   = 0
+Td_yaw   = 0
 
 def computeA0(Kc, Td):
     a0 = Kc * (1 + Td/Ts)
     return str(int(a0 * (2**FP_FRAC_BITS)))
 
 def computeA1(Kc, Ti, Td):
-    a1 = -Kc_roll * (1 + 2*Td/Ts - Ts/Ti)
+    a1 = -Kc * (1 + 2*Td/Ts - Ts/Ti)
+    #a1 = -Kc * (1 + 2*Td/Ts) #w/o integral
     return str(int(a1 * (2**FP_FRAC_BITS)))
 
 def computeA2(Kc, Td):
@@ -51,7 +59,7 @@ if __name__ == "__main__":
 
     f.write("\n")
     f.write("library ieee;\n")
-    f.write("use work.fp_pkg;\n")
+    f.write("use work.fp_pkg.all;\n")
     f.write("use ieee.std_logic_1164.all;\n")
     f.write("use ieee.numeric_std.all;\n")
     f.write("\n")

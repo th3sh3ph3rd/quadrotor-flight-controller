@@ -103,8 +103,24 @@ begin
 
             when IDLE =>
                 if ss_n = '0' then
-                    S.state := RECV_ROLL;
+                    S.state := RECV_PITCH;
                 end if;
+            
+            when RECV_PITCH =>
+                miso <= '0';
+                if R.sclk_prev = '0' and R.sclk = '1' then --detect rising edge
+                    S.buf := R.buf(SPI_BITS-2 downto 0) & mosi;
+                    if R.bit_cnt = SPI_BITS-1 then
+                        S.bit_cnt   := 0;
+                        --S.pitch     := shift_left(resize(S.buf(ADC_WIDTH-1 downto 0), FP_WIDTH), FP_FRAC_BITS); --sign-extend the ADC value and convert to fixe-point type
+                        S.pitch     := shift_left(resize(R.buf(ADC_WIDTH-2 downto 0)&mosi, FP_WIDTH), FP_FRAC_BITS); --sign-extend the ADC value and convert to fixe-point type
+                        S.buf       := (others => '0');
+                        S.state     := RECV_ROLL;
+                    else
+                        S.bit_cnt := R.bit_cnt + 1;
+                    end if;
+                end if;
+
 
             when RECV_ROLL =>
                 miso <= '0';
@@ -112,20 +128,9 @@ begin
                     S.buf := R.buf(SPI_BITS-2 downto 0) & mosi;
                     if R.bit_cnt = SPI_BITS-1 then
                         S.bit_cnt   := 0;
-                        S.roll      := shift_left(resize(S.buf(ADC_WIDTH-1 downto 0), FP_WIDTH), FP_FRAC_BITS); --sign-extend the ADC value and convert to fixe-point type
-                        S.state     := RECV_PITCH;
-                    else
-                        S.bit_cnt := R.bit_cnt + 1;
-                    end if;
-                end if;
-
-            when RECV_PITCH =>
-                miso <= '0';
-                if R.sclk_prev = '0' and R.sclk = '1' then --detect rising edge
-                    S.buf := R.buf(SPI_BITS-2 downto 0) & mosi;
-                    if R.bit_cnt = SPI_BITS-1 then
-                        S.bit_cnt   := 0;
-                        S.pitch     := shift_left(resize(S.buf(ADC_WIDTH-1 downto 0), FP_WIDTH), FP_FRAC_BITS); --sign-extend the ADC value and convert to fixe-point type
+                        --S.roll      := shift_left(resize(S.buf(ADC_WIDTH-1 downto 0), FP_WIDTH), FP_FRAC_BITS); --sign-extend the ADC value and convert to fixe-point type
+                        S.roll      := shift_left(resize(R.buf(ADC_WIDTH-2 downto 0)&mosi, FP_WIDTH), FP_FRAC_BITS); --sign-extend the ADC value and convert to fixe-point type
+                        S.buf       := (others => '0');
                         S.state     := RECV_YAW;
                     else
                         S.bit_cnt := R.bit_cnt + 1;
@@ -138,7 +143,9 @@ begin
                     S.buf := R.buf(SPI_BITS-2 downto 0) & mosi;
                     if R.bit_cnt = SPI_BITS-1 then
                         S.bit_cnt   := 0;
-                        S.yaw       := shift_left(resize(S.buf(ADC_WIDTH-1 downto 0), FP_WIDTH), FP_FRAC_BITS); --sign-extend the ADC value and convert to fixe-point type
+                        --S.yaw       := shift_left(resize(S.buf(ADC_WIDTH-1 downto 0), FP_WIDTH), FP_FRAC_BITS); --sign-extend the ADC value and convert to fixe-point type
+                        S.yaw       := shift_left(resize(R.buf(ADC_WIDTH-2 downto 0)&mosi, FP_WIDTH), FP_FRAC_BITS); --sign-extend the ADC value and convert to fixe-point type
+                        S.buf       := (others => '0');
                         S.state     := DONE;
                     else
                         S.bit_cnt := R.bit_cnt + 1;

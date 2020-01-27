@@ -17,16 +17,7 @@ package control_loop_pkg is
 
         generic
         (
-            GAIN_P_ROLL  : FP_T; 
-            GAIN_I_ROLL  : FP_T; 
-            GAIN_D_ROLL  : FP_T; 
-            GAIN_P_PITCH : FP_T; 
-            GAIN_I_PITCH : FP_T; 
-            GAIN_D_PITCH : FP_T; 
-            GAIN_P_YAW   : FP_T; 
-            GAIN_I_YAW   : FP_T; 
-            GAIN_D_YAW   : FP_T; 
-            THRUST_Z     : motor_rpm 
+            THRUST_Z    : motor_rpm 
         ); 
         port
         (

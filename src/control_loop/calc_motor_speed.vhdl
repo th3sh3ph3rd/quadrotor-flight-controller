@@ -10,8 +10,6 @@ use ieee.numeric_std.all;
 use work.fp_pkg.all;
 use work.motor_pwm_pkg.all;
 
---TODO add saturation state for over- and undersaturation
-
 entity calc_motor_speed is
 
         generic
@@ -46,26 +44,26 @@ architecture behavior of calc_motor_speed is
 
     type REGISTER_T is record
         state   : STATE_T;
-        roll    : FP_T;
-        pitch   : FP_T;
-        yaw     : FP_T;
-        m0      : FP_T;
-        m1      : FP_T;
-        m2      : FP_T;
-        m3      : FP_T;
+        roll    : integer;
+        pitch   : integer;
+        yaw     : integer;
+        mfcw      : integer;
+        mfccw      : integer;
+        mrcw      : integer;
+        mrccw      : integer;
     end record;
     signal R, R_next : REGISTER_T;
 
     constant R_reset : REGISTER_T :=
     (
         state   => IDLE,
-        roll    => (others => '0'),
-        pitch   => (others => '0'),
-        yaw     => (others => '0'),
-        m0      => (others => '0'),
-        m1      => (others => '0'),
-        m2      => (others => '0'),
-        m3      => (others => '0')
+        roll    => 0,
+        pitch   => 0,
+        yaw     => 0,
+        mfcw      => 0,
+        mfccw      => 0,
+        mrcw      => 0,
+        mrccw      => 0
     );
 
 begin
@@ -87,10 +85,10 @@ begin
 
         --convert output integer value
         speed_rdy   <= '0';
-        m0          <= std_logic_vector(to_unsigned(fp2int(R.m0), MOTOR_RPM_WIDTH));
-        m1          <= std_logic_vector(to_unsigned(fp2int(R.m1), MOTOR_RPM_WIDTH));
-        m2          <= std_logic_vector(to_unsigned(fp2int(R.m2), MOTOR_RPM_WIDTH));
-        m3          <= std_logic_vector(to_unsigned(fp2int(R.m3), MOTOR_RPM_WIDTH));
+        m0          <= std_logic_vector(to_unsigned(R.mfcw, MOTOR_RPM_WIDTH));
+        m1          <= std_logic_vector(to_unsigned(R.mfccw, MOTOR_RPM_WIDTH));
+        m2          <= std_logic_vector(to_unsigned(R.mrcw, MOTOR_RPM_WIDTH));
+        m3          <= std_logic_vector(to_unsigned(R.mrccw, MOTOR_RPM_WIDTH));
 
         S := R;
 
@@ -98,18 +96,18 @@ begin
 
             when IDLE =>
                 if new_thrust = '1' then
-                    S.roll  := roll;
-                    S.pitch := pitch;
-                    S.yaw   := yaw;
+                    S.roll  := fp2int(roll);
+                    S.pitch := fp2int(pitch);
+                    S.yaw   := fp2int(yaw);
                     S.state := CALC;
                 end if;
 
             when CALC => --calculate the thrust values for every rotor
-                S.m0    := shift_left(signed(resize(unsigned(THRUST_Z), FP_WIDTH)), FP_FRAC_BITS) - R.roll + R.pitch + R.yaw;
-                S.m1    := shift_left(signed(resize(unsigned(THRUST_Z), FP_WIDTH)), FP_FRAC_BITS) - R.roll - R.pitch - R.yaw;
-                S.m2    := shift_left(signed(resize(unsigned(THRUST_Z), FP_WIDTH)), FP_FRAC_BITS) + R.roll - R.pitch + R.yaw;
-                S.m3    := shift_left(signed(resize(unsigned(THRUST_Z), FP_WIDTH)), FP_FRAC_BITS) + R.roll + R.pitch - R.yaw;
-                S.state := DONE;
+                S.mfcw      := to_integer(unsigned(THRUST_Z)) + R.roll + R.pitch + R.yaw;
+                S.mfccw     := to_integer(unsigned(THRUST_Z)) - R.roll + R.pitch - R.yaw;
+                S.mrcw      := to_integer(unsigned(THRUST_Z)) - R.roll - R.pitch + R.yaw;
+                S.mrccw     := to_integer(unsigned(THRUST_Z)) + R.roll - R.pitch - R.yaw;
+                S.state     := DONE;
 
             when DONE =>
                 speed_rdy   <= '1';

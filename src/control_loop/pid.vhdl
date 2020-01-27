@@ -14,9 +14,9 @@ entity pid is
         -- TODO add integral saturation
         generic
         (
-            GAIN_P : FP_T; 
-            GAIN_I : FP_T; 
-            GAIN_D : FP_T 
+            A0 : FP_T; 
+            A1 : FP_T; 
+            A2 : FP_T 
         ); 
         port
         (
@@ -49,11 +49,11 @@ architecture behavior of pid is
         sp          : FP_T;
         adc         : FP_T;
         err         : FP_T;
-        err_acc     : FP_T;
-        err_prev    : FP_T;
-        p           : FP_MULRES_T;
-        i           : FP_MULRES_T;
-        d           : FP_MULRES_T;
+        err1        : FP_T;
+        err2        : FP_T;
+        t0          : FP_MULRES_T;
+        t1          : FP_MULRES_T;
+        t2          : FP_MULRES_T;
         dac         : FP_T;
     end record;
     signal R, R_next : REGISTER_T;
@@ -64,11 +64,11 @@ architecture behavior of pid is
         sp          => (others => '0'),
         adc         => (others => '0'),
         err         => (others => '0'),
-        err_acc     => (others => '0'),
-        err_prev    => (others => '0'),
-        p           => (others => '0'),
-        i           => (others => '0'),
-        d           => (others => '0'),
+        err1        => (others => '0'),
+        err2        => (others => '0'),
+        t0          => (others => '0'),
+        t1          => (others => '0'),
+        t2          => (others => '0'),
         dac         => (others => '0') 
     );
 
@@ -107,21 +107,23 @@ begin
                 end if;
 
             when CALC_ERR =>
-                S.err       := R.sp - R.adc;
-                S.err_acc   := R.err_acc + R.sp - R.adc; 
-                S.err_prev  := R.err;
-                S.state     := CALC_TERMS;
+                S.err   := R.sp - R.adc;
+                S.err1  := R.err; 
+                S.err2  := R.err1;
+                S.state := CALC_TERMS;
 
+            --TODO just use one multiplier and pipeline MAC operation
             when CALC_TERMS =>
-                S.p     := GAIN_P * R.err;
-                S.i     := GAIN_I * R.err_acc; --TODO multiply by dt
-                S.d     := GAIN_D * (R.err - R.err_prev); --TODO divide by dt
+                S.t0    := A0 * R.err;
+                S.t1    := A1 * R.err1;
+                S.t2    := A2 * R.err2;
                 S.state := ADD_TERMS;
 
             when ADD_TERMS => --extract fixed point value from multiplication result and add values
-                S.dac   := fp_mulres2fp(R.p) + 
-                           fp_mulres2fp(R.i) + 
-                           fp_mulres2fp(R.d);
+                S.dac   := R.dac +
+                           fp_mulres2fp(R.t0) + 
+                           fp_mulres2fp(R.t1) + 
+                           fp_mulres2fp(R.t2);
                 S.state := DONE;
 
             when DONE =>

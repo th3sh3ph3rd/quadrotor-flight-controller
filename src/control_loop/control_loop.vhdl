@@ -11,21 +11,13 @@ use work.fp_pkg.all;
 use work.imu_pkg.all;
 use work.motor_pwm_pkg.all;
 use work.control_loop_pkg.all;
+use work.pid_params.all;
 
 entity control_loop is
 
         generic
         (
-            GAIN_P_ROLL  : FP_T; 
-            GAIN_I_ROLL  : FP_T; 
-            GAIN_D_ROLL  : FP_T; 
-            GAIN_P_PITCH : FP_T; 
-            GAIN_I_PITCH : FP_T; 
-            GAIN_D_PITCH : FP_T; 
-            GAIN_P_YAW   : FP_T; 
-            GAIN_I_YAW   : FP_T; 
-            GAIN_D_YAW   : FP_T; 
-            THRUST_Z     : motor_rpm 
+            THRUST_Z    : motor_rpm 
         ); 
         port
         (
@@ -61,11 +53,12 @@ architecture structure of control_loop is
     signal roll_pid, pitch_pid, yaw_pid : FP_T;
 
     component pid is
+        -- TODO add integral saturation
         generic
         (
-            GAIN_P : FP_T; 
-            GAIN_I : FP_T; 
-            GAIN_D : FP_T 
+            A0 : FP_T; 
+            A1 : FP_T; 
+            A2 : FP_T 
         ); 
         port
         (
@@ -118,9 +111,9 @@ begin
     roll_ctrl : pid
     generic map
     (
-        GAIN_P => GAIN_P_PITCH, 
-        GAIN_I => GAIN_I_PITCH,
-        GAIN_D => GAIN_D_PITCH
+        A0 => A0_ROLL, 
+        A1 => A1_ROLL,
+        A2 => A2_ROLL
     )
     port map
     (
@@ -137,9 +130,9 @@ begin
     pitch_ctrl : pid
     generic map
     (
-        GAIN_P => GAIN_P_PITCH, 
-        GAIN_I => GAIN_I_PITCH,
-        GAIN_D => GAIN_D_PITCH
+        A0 => A0_PITCH, 
+        A1 => A1_PITCH,
+        A2 => A2_PITCH
     )
     port map
     (
@@ -156,9 +149,9 @@ begin
     yaw_ctrl : pid
     generic map
     (
-        GAIN_P => GAIN_P_YAW, 
-        GAIN_I => GAIN_I_YAW,
-        GAIN_D => GAIN_D_YAW
+        A0 => A0_YAW, 
+        A1 => A1_YAW,
+        A2 => A2_YAW
     )
     port map
     (
