@@ -132,7 +132,7 @@ begin
 
         end case;
         
-        R_next  <= S;
+        R_next <= S;
 
     end process async;
 

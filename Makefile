@@ -3,6 +3,7 @@
 PROJ_NAME := quadrotor-flight-controller
 
 VHDL_FILES := src/flight_controller_top.vhdl
+PID_PARAMS := src/control_loop/pid_params.vhdl
 
 TOP_ENTITY := flight_controller_top
 PROJ_DIR := quartus
@@ -11,7 +12,10 @@ BLASTER_TYPE ?= USB-BlasterII
 
 all: $(BITSTREAM)
 
-$(BITSTREAM): $(VHDL_FILES)
+pidparams:
+	cd tools; ./computePIDParams.py; cd -
+
+$(BITSTREAM): $(VHDL_FILES) $(PID_PARAMS)
 	quartus_map $(PROJ_DIR)/$(TOP_ENTITY)
 	quartus_fit $(PROJ_DIR)/$(TOP_ENTITY)
 	quartus_asm $(PROJ_DIR)/$(TOP_ENTITY)
@@ -20,8 +24,18 @@ $(BITSTREAM): $(VHDL_FILES)
 config: $(BITSTREAM)
 	-killall -q jtagd
 	jtagd
-
 	quartus_pgm -c $(BLASTER_TYPE) -m JTAG -o "P;$(BITSTREAM)"
+
+config_pid:
+	make pidparams
+	quartus_map $(PROJ_DIR)/$(TOP_ENTITY)
+	quartus_fit $(PROJ_DIR)/$(TOP_ENTITY)
+	quartus_asm $(PROJ_DIR)/$(TOP_ENTITY)
+	quartus_sta $(PROJ_DIR)/$(TOP_ENTITY)
+	-killall -q jtagd
+	jtagd
+	quartus_pgm -c $(BLASTER_TYPE) -m JTAG -o "P;$(BITSTREAM)"
+	
 
 # Be careful with the clean command!
 # If $(PROJ_DIR) is not set, this removes your entire filesystem!

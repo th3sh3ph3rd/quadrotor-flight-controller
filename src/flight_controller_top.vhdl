@@ -101,20 +101,6 @@ begin
         data_out => ss_n
     );
     
---    sclk_sync : sync
---    generic map 
---    (
---        SYNC_STAGES => 2,
---        RESET_VALUE => '1'
---    )
---    port map 
---    (
---        clk => clk,
---        res_n => '1',
---        data_in => pmodb(1),
---        data_out => sclk
---    );
-    
     mosi_sync : sync
     generic map 
     (
@@ -147,9 +133,10 @@ begin
     control_loop_inst : control_loop
     generic map
     (
-        --THRUST_Z     => std_logic_vector(to_signed(MIN_RPM+(MAX_RPM-MIN_RPM)/4+(MAX_RPM-MIN_RPM)/8, MOTOR_RPM_WIDTH))
-        THRUST_Z     => std_logic_vector(to_signed(MIN_RPM+(MAX_RPM-MIN_RPM)/4+(MAX_RPM-MIN_RPM)/16+(MAX_RPM-MIN_RPM)/32+(MAX_RPM-MIN_RPM)/64+(MAX_RPM-MIN_RPM)/128+(MAX_RPM-MIN_RPM)/128, MOTOR_RPM_WIDTH))
-        --THRUST_Z     => std_logic_vector(to_signed(MIN_RPM+(MAX_RPM-MIN_RPM)/4, MOTOR_RPM_WIDTH)) LO
+
+        THRUST_Z     => std_logic_vector(to_signed(MIN_RPM+(MAX_RPM-MIN_RPM)/2-(MAX_RPM-MIN_RPM)/16, MOTOR_RPM_WIDTH))
+        --THRUST_Z     => std_logic_vector(to_signed(MIN_RPM+(MAX_RPM-MIN_RPM)/4+(MAX_RPM-MIN_RPM)/16+(MAX_RPM-MIN_RPM)/32+(MAX_RPM-MIN_RPM)/128+(MAX_RPM-MIN_RPM)/256, MOTOR_RPM_WIDTH))
+        --THRUST_Z     => std_logic_vector(to_signed(MIN_RPM+(MAX_RPM-MIN_RPM)/4+(MAX_RPM-MIN_RPM)/16+(MAX_RPM-MIN_RPM)/32+(MAX_RPM-MIN_RPM)/64+(MAX_RPM-MIN_RPM)/128+(MAX_RPM-MIN_RPM)/128, MOTOR_RPM_WIDTH))
     )
     port map
     (
